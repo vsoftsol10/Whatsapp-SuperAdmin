@@ -33,8 +33,8 @@ const sendCompanyWelcomeEmail = async ({
           <tr>
             <td><b>Login URL</b></td>
             <td>
-              <a href="${process.env.FRONTEND_URL}/login">
-                ${process.env.FRONTEND_URL}/login
+              <a href="${process.env.CRM_FRONTEND_URL}/login">
+                 ${process.env.CRM_FRONTEND_URL}/login
               </a>
             </td>
           </tr>
