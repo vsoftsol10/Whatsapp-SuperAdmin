@@ -14,11 +14,30 @@ const app = express();
 app.use(helmet());
 
 // Restrict CORS to known frontend origin(s). Set FRONTEND_URL in .env for production.
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173").split(",");
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
+const allowedOrigins = (
+  process.env.FRONTEND_URL || "http://localhost:5173"
+).split(",").map(origin => origin.trim());
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests without an origin
+      // (Postman, server-to-server requests, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(express.json());
 
