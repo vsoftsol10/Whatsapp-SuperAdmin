@@ -18,6 +18,8 @@ const allowedOrigins = (
   process.env.FRONTEND_URL || "http://localhost:5173"
 ).split(",").map(origin => origin.trim());
 
+console.log("ALLOWED ORIGINS:", allowedOrigins);
+
 app.use(
   cors({
     origin: function (origin, callback) {
