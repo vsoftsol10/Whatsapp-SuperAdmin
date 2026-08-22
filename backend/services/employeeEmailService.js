@@ -9,6 +9,9 @@ const sendEmployeeCredentialsEmail = async ({
   password
 }) => {
 
+  const loginUrl =
+    `${process.env.FRONTEND_URL || "https://whatsapp-superadmin.onrender.com"}/login`;
+
   const htmlContent = `
 
   <div style="font-family:Arial,sans-serif">
@@ -21,6 +24,34 @@ const sendEmployeeCredentialsEmail = async ({
     <p style="color:#4b5563;line-height:1.6;">
       Your employee account has been successfully created.
     </p>
+
+    <div style="
+  margin:25px 0;
+  text-align:center;
+">
+  <a
+    href="${loginUrl}"
+    style="
+      display:inline-block;
+      padding:12px 24px;
+      background:#111827;
+      color:white;
+      text-decoration:none;
+      border-radius:8px;
+      font-weight:600;
+    "
+  >
+    Login 
+  </a>
+</div>
+
+<p style="
+  color:#6b7280;
+  font-size:13px;
+  word-break:break-all;
+">
+  Login URL: ${loginUrl}
+</p>
 
 
     <div style="
