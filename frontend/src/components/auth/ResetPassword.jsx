@@ -143,7 +143,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import axios from "axios";
+import api from "../../api/axios";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -190,8 +190,8 @@ export default function ResetPassword() {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:5001/api/auth/reset-password",
+      const response = await api.post(
+        "/auth/reset-password",
         {
           token,
           newPassword,
@@ -210,7 +210,7 @@ export default function ResetPassword() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Unable to reset password"
+        "Unable to reset password"
       );
     } finally {
       setLoading(false);
