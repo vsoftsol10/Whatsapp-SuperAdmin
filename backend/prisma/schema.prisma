@@ -1241,3 +1241,45 @@ model SupportTicketNote {
   
   @@index([supportTicketId])
 }
+
+//////////////////////////////////////////////////////
+// AUDIT LOG
+//////////////////////////////////////////////////////
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  // Who performed the action
+  actorId String?
+  actorType String?
+
+  // What action was performed
+  action String
+
+  // What was affected
+  entityType String
+  entityId String?
+
+  // Related company, if applicable
+  companyId Int?
+
+  // Human-readable description
+  description String?
+
+  // Data before and after the change
+  oldValue Json?
+  newValue Json?
+
+  // Request information
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([companyId])
+  @@index([createdAt])
+}

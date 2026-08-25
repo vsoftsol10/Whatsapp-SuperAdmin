@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
 const sendCompanyWelcomeEmail = require("../services/companyWelcomeEmail");
+const { createAuditLog } = require("../services/auditLogService");
 
 console.log("******** COMPANY CONTROLLER LOADED ********");
 
@@ -131,6 +132,21 @@ const createCompany = async (req, res) => {
         throw err;
       }
     }
+
+    // =====================================
+    // COMPANY CREATION AUDIT
+    // =====================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: req.user?.role || "UNKNOWN",
+      action: "COMPANY_CREATED",
+      entityType: "COMPANY",
+      entityId: company.id,
+      description: `Company "${company.companyName}" was created successfully`,
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
 
     // Create Subscription
     const subscription = await prisma.subscription.create({
@@ -423,6 +439,42 @@ const updateCompany = async (req, res) => {
 
     console.log("Company Updated:", company);
 
+    // =====================================
+    // COMPANY UPDATE AUDIT
+    // =====================================
+
+    await createAuditLog({
+      actorId: req.user.id,
+      actorType: req.user.role,
+      action: "COMPANY_UPDATED",
+      entityType: "COMPANY",
+      entityId: company.id,
+      companyId: company.id,
+      description: `Company "${company.companyName}" was updated`,
+      oldValue: {
+        companyName: existingCompany.companyName,
+        ownerName: existingCompany.ownerName,
+        email: existingCompany.email,
+        phone: existingCompany.phone,
+        address: existingCompany.address,
+        plan: existingCompany.plan,
+        status: existingCompany.status,
+        expiryDate: existingCompany.expiryDate,
+      },
+      newValue: {
+        companyName: company.companyName,
+        ownerName: company.ownerName,
+        email: company.email,
+        phone: company.phone,
+        address: company.address,
+        plan: company.plan,
+        status: company.status,
+        expiryDate: company.expiryDate,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
+
     // --------------------------------------------------
     // 5. Update company admin information
     // --------------------------------------------------
@@ -575,11 +627,11 @@ const updateCompany = async (req, res) => {
     });
   }
 };
+
 const changeCompanyStatus = async (req, res) => {
   try {
 
     const { companyId } = req.params;
-
     const { status } = req.body;
 
     const allowedStatus = [
@@ -595,9 +647,39 @@ const changeCompanyStatus = async (req, res) => {
       });
     }
 
-    // Update Company
-    const company = await prisma.company.update({
+    // =====================================
+    // 1. FIND EXISTING COMPANY
+    // =====================================
 
+    const existingCompany = await prisma.company.findUnique({
+      where: {
+        companyId
+      }
+    });
+
+    if (!existingCompany) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found"
+      });
+    }
+
+    // =====================================
+    // 2. CHECK IF STATUS IS ALREADY SAME
+    // =====================================
+
+    if (existingCompany.status === status) {
+      return res.status(400).json({
+        success: false,
+        message: `Company is already ${status}`
+      });
+    }
+
+    // =====================================
+    // 3. UPDATE COMPANY STATUS
+    // =====================================
+
+    const company = await prisma.company.update({
       where: {
         companyId
       },
@@ -605,15 +687,35 @@ const changeCompanyStatus = async (req, res) => {
       data: {
         status
       }
-
     });
 
-    // Update Subscription Status
-    let subscriptionStatus = "ACTIVE";
+    // =====================================
+    // 4. COMPANY STATUS CHANGE AUDIT
+    // =====================================
 
-    // if (status === "TRIAL") {
-    //   subscriptionStatus = "TRIAL";
-    // }
+    await createAuditLog({
+      actorId: req.user.id,
+      actorType: req.user.role,
+      action: "COMPANY_STATUS_CHANGED",
+      entityType: "COMPANY",
+      entityId: company.id,
+      companyId: company.id,
+      description: `Company "${company.companyName}" status changed from ${existingCompany.status} to ${company.status}`,
+      oldValue: {
+        status: existingCompany.status
+      },
+      newValue: {
+        status: company.status
+      },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+    // =====================================
+    // 5. UPDATE SUBSCRIPTION STATUS
+    // =====================================
+
+    let subscriptionStatus = "ACTIVE";
 
     if (status === "EXPIRED") {
       subscriptionStatus = "EXPIRED";
@@ -628,7 +730,6 @@ const changeCompanyStatus = async (req, res) => {
     }
 
     await prisma.subscription.updateMany({
-
       where: {
         companyId: company.id
       },
@@ -636,13 +737,16 @@ const changeCompanyStatus = async (req, res) => {
       data: {
         status: subscriptionStatus
       }
-
     });
+
+    // =====================================
+    // 6. RESPONSE
+    // =====================================
 
     res.status(200).json({
       success: true,
       message: "Company status updated successfully",
-      company,
+      company
     });
 
   } catch (error) {

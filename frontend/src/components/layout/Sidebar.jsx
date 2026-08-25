@@ -11,6 +11,8 @@ import {
   Ticket,
   Bell,
   Settings,
+  ArrowUpCircle,
+  History,
   LogOut
 } from "lucide-react";
 

@@ -1,5 +1,5 @@
 
-
+const { createAuditLog } = require("./auditLogService");
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -64,13 +64,13 @@ const login = async (data) => {
   });
 
   console.log("Login email:", normalizedEmail);
-console.log("Super Admin found:", !!admin);
+  console.log("Super Admin found:", !!admin);
 
-if (admin) {
-  console.log("Admin ID:", admin.id);
-  console.log("Admin email from DB:", admin.email);
-  console.log("Password hash exists:", !!admin.password);
-}
+  if (admin) {
+    console.log("Admin ID:", admin.id);
+    console.log("Admin email from DB:", admin.email);
+    console.log("Password hash exists:", !!admin.password);
+  }
 
   if (admin) {
     user = admin;
@@ -103,6 +103,14 @@ if (admin) {
   // =========================
 
   if (!user) {
+    await createAuditLog({
+      actorId: null,
+      actorType: "UNKNOWN",
+      action: "LOGIN_FAILED",
+      entityType: "AUTHENTICATION",
+      description: `Failed login attempt for ${normalizedEmail}`,
+    });
+
     throw new Error("Invalid email or password");
   }
 
@@ -127,6 +135,15 @@ if (admin) {
   );
 
   if (!isMatch) {
+    await createAuditLog({
+      actorId: user.id,
+      actorType: role,
+      action: "LOGIN_FAILED",
+      entityType: role,
+      entityId: user.id,
+      description: `Failed login attempt for ${user.email}`,
+    });
+
     throw new Error("Invalid email or password");
   }
 
@@ -144,6 +161,15 @@ if (admin) {
       expiresIn: "1d"
     }
   );
+
+  await createAuditLog({
+    actorId: user.id,
+    actorType: role,
+    action: "LOGIN_SUCCESS",
+    entityType: role,
+    entityId: user.id,
+    description: `${role} logged in successfully`,
+  });
 
   // =========================
   // SUPER ADMIN
@@ -295,7 +321,7 @@ const changePassword = async (id, role, data) => {
 
 };
 
-const forgotPassword = async (email) => {
+const forgotPassword = async (email, ipAddress, userAgent) => {
 
   console.log("=================================");
   console.log("FORGOT PASSWORD CALLED");
@@ -496,6 +522,17 @@ const forgotPassword = async (email) => {
       htmlContent,
     });
 
+    await createAuditLog({
+      actorId: user.id,
+      actorType: role,
+      action: "PASSWORD_RESET_REQUESTED",
+      entityType: role,
+      entityId: user.id,
+      description: `${role} requested a password reset and reset email was sent`,
+      ipAddress,
+      userAgent,
+    });
+
     console.log("=================================");
     console.log("PASSWORD RESET EMAIL SENT");
     console.log("Email:", user.email);
@@ -548,7 +585,14 @@ const forgotPassword = async (email) => {
   };
 };
 
-const resetPassword = async (token, newPassword, confirmPassword) => {
+const resetPassword = async (
+  token,
+  newPassword,
+  confirmPassword,
+  ipAddress,
+  userAgent
+) => {
+
   if (!token || !newPassword || !confirmPassword) {
     throw new Error("All fields are required");
   }
@@ -618,6 +662,21 @@ const resetPassword = async (token, newPassword, confirmPassword) => {
       },
     });
   }
+
+  // =====================================
+  // PASSWORD RESET AUDIT
+  // =====================================
+
+  await createAuditLog({
+    actorId: user.id,
+    actorType: role,
+    action: "PASSWORD_RESET",
+    entityType: role,
+    entityId: user.id,
+    description: `${role} password was reset successfully`,
+    ipAddress,
+    userAgent,
+  });
 
   return {
     message: "Password reset successfully",

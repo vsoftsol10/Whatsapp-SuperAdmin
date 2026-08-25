@@ -84,7 +84,9 @@ const profile = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const result = await authService.forgotPassword(
-      req.body.email
+      req.body.email,
+      req.ip,
+      req.get("user-agent")
     );
 
     res.status(200).json({
@@ -107,7 +109,9 @@ const resetPassword = async (req, res) => {
     const result = await authService.resetPassword(
       token,
       newPassword,
-      confirmPassword
+      confirmPassword,
+      req.ip,
+      req.get("user-agent")
     );
 
     res.status(200).json({

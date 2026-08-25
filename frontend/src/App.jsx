@@ -15,6 +15,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import PaymentsPage from "./pages/PaymentsPage";
 import UpgradeRequests from "./pages/UpgradeRequests";
 import ResetPassword from "./components/auth/ResetPassword";
+import AuditLogsPage from "./pages/AuditLogsPage";
 
 export default function App() {
   return (
@@ -121,6 +122,17 @@ export default function App() {
                 allowedRoles={["SUPER_ADMIN", "EMPLOYEE"]}
               >
                 <UpgradeRequests />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/audit-logs"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN"]}
+              >
+                <AuditLogsPage />
               </ProtectedRoute>
             }
           />

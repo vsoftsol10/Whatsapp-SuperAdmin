@@ -9,7 +9,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  ArrowUpCircle
+  ArrowUpCircle,
+  History
 } from "lucide-react";
 
 
@@ -51,15 +52,21 @@ export const menuItems = [
     roles: ["SUPER_ADMIN"]
   },
   {
+    name: "Payment",
+    icon: Wallet,
+    path: "/payments",
+    roles: ["SUPER_ADMIN", "EMPLOYEE"]
+  },
+  {
+    name: "Audit Logs",
+    icon: History,
+    path: "/audit-logs",
+    roles: ["SUPER_ADMIN"]
+  },
+  {
     name: "Settings",
     icon: Settings,
     path: "/profile",
     roles: ["SUPER_ADMIN", "EMPLOYEE"]
   },
-   {
-    name: "Payment",
-    icon: Wallet,
-    path: "/payments",
-    roles: ["SUPER_ADMIN", "EMPLOYEE"]
-  }
 ];
