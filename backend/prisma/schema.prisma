@@ -65,6 +65,7 @@ model Company {
   tasks Task[]
   tickets Ticket[]
   employees Employee[]
+  crmAuditLogs CrmAuditLog[]
   subscriptionUpgradeRequests SubscriptionUpgradeRequest[]
 }
 
@@ -1252,7 +1253,7 @@ model AuditLog {
   // Who performed the action
   actorId String?
   actorType String?
-
+  actorName String?
   // What action was performed
   action String
 
@@ -1282,4 +1283,61 @@ model AuditLog {
   @@index([entityId])
   @@index([companyId])
   @@index([createdAt])
+}
+
+model CrmAuditLog {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+
+  userId String?
+  userName String
+  userRole String
+
+  action CrmAuditAction
+  module CrmAuditModule
+
+  entityId String?
+  entityName String?
+
+  changes Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  ///////////////////////////////////////
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([module])
+  @@index([createdAt])
+  @@index([companyId, module, createdAt])
+  @@map("crm_audit_logs")
+}
+
+enum CrmAuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  ASSIGN
+
+  @@map("CrmAuditAction")
+}
+
+enum CrmAuditModule {
+  CUSTOMER
+  EMPLOYEE
+  LEAD
+  DEAL
+  TASK
+  TICKET
+  CAMPAIGN
+  TEMPLATE
+  USER
+
+  @@map("CrmAuditModule")
 }

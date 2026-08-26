@@ -141,7 +141,7 @@ const login = async (data) => {
       action: "LOGIN_FAILED",
       entityType: role,
       entityId: user.id,
-      description: `Failed login attempt for ${user.email}`,
+      description: `Failed login attempt for ${user.name}`,
     });
 
     throw new Error("Invalid email or password");
@@ -165,10 +165,11 @@ const login = async (data) => {
   await createAuditLog({
     actorId: user.id,
     actorType: role,
+    actorName: user.name,
     action: "LOGIN_SUCCESS",
     entityType: role,
     entityId: user.id,
-    description: `${role} logged in successfully`,
+    description: `${user.name} logged in successfully`,
   });
 
   // =========================

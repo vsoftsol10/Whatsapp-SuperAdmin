@@ -1,22 +1,38 @@
-
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
+
 const {
   sendEmployeeCredentialsEmail
 } = require("../services/employeeEmailService");
 
+const {
+  createAuditLog
+} = require("../services/auditLogService");
+
+
+// ==========================================
+// GENERATE TEMPORARY PASSWORD
+// ==========================================
+
 const generatePassword = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
+
   let password = "";
 
   for (let i = 0; i < 10; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+    password += chars.charAt(
+      Math.floor(Math.random() * chars.length)
+    );
   }
 
   return password;
 };
 
 
+// ==========================================
+// GENERATE EMPLOYEE ID
+// ==========================================
 
 const generateEmployeeId = async () => {
   const lastEmployee = await prisma.employee.findFirst({
@@ -39,8 +55,14 @@ const generateEmployeeId = async () => {
   return `EMP${String(nextNumber).padStart(3, "0")}`;
 };
 
+
+// ==========================================
+// CREATE EMPLOYEE
+// ==========================================
+
 const createEmployee = async (req, res) => {
   try {
+
     const {
       name,
       email,
@@ -49,15 +71,17 @@ const createEmployee = async (req, res) => {
       role
     } = req.body;
 
+
     // ==========================================
     // DATABASE VALIDATION
     // ==========================================
 
-    const existingEmployee = await prisma.employee.findUnique({
-      where: {
-        email
-      }
-    });
+    const existingEmployee =
+      await prisma.employee.findUnique({
+        where: {
+          email
+        }
+      });
 
     if (existingEmployee) {
       return res.status(409).json({
@@ -66,11 +90,13 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    const existingPhone = await prisma.employee.findFirst({
-      where: {
-        phone
-      }
-    });
+
+    const existingPhone =
+      await prisma.employee.findFirst({
+        where: {
+          phone
+        }
+      });
 
     if (existingPhone) {
       return res.status(409).json({
@@ -79,38 +105,50 @@ const createEmployee = async (req, res) => {
       });
     }
 
+
     // ==========================================
-    // EXISTING CREATION LOGIC
+    // CREATE EMPLOYEE
     // ==========================================
 
-    const employeeId = await generateEmployeeId();
+    const employeeId =
+      await generateEmployeeId();
 
-    const temporaryPassword = generatePassword();
+    const temporaryPassword =
+      generatePassword();
 
-    const hashedPassword = await bcrypt.hash(
-      temporaryPassword,
-      10
-    );
+    const hashedPassword =
+      await bcrypt.hash(
+        temporaryPassword,
+        10
+      );
 
-    const employee = await prisma.employee.create({
-      data: {
-        employeeId,
-        name,
-        email,
-        phone,
-        address,
-        password: hashedPassword,
-        role: role || "EMPLOYEE",
-        status: "ACTIVE",
-        mustChangePassword: true
-      }
-    });
+
+    const employee =
+      await prisma.employee.create({
+        data: {
+          employeeId,
+          name,
+          email,
+          phone,
+          address,
+          password: hashedPassword,
+          role: role || "EMPLOYEE",
+          status: "ACTIVE",
+          mustChangePassword: true
+        }
+      });
+
 
     console.log("Employee created:", {
       employeeId: employee.employeeId,
       name: employee.name,
       email: employee.email
     });
+
+
+    // ==========================================
+    // SEND EMPLOYEE CREDENTIALS
+    // ==========================================
 
     await sendEmployeeCredentialsEmail({
       employeeName: employee.name,
@@ -119,9 +157,46 @@ const createEmployee = async (req, res) => {
       password: temporaryPassword
     });
 
+
+    // ==========================================
+    // EMPLOYEE CREATED AUDIT LOG
+    // ==========================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: "SUPER_ADMIN",
+      actorName: req.user?.name || "Super Admin",
+
+      action: "EMPLOYEE_CREATED",
+
+      entityType: "EMPLOYEE",
+      entityId: employee.id,
+
+      description:
+        `Employee "${employee.name}" was created`,
+
+      newValue: {
+        employeeId: employee.employeeId,
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        role: employee.role,
+        status: employee.status
+      },
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
     return res.status(201).json({
       success: true,
       message: "Employee created successfully",
+
       employee: {
         id: employee.id,
         employeeId: employee.employeeId,
@@ -132,11 +207,16 @@ const createEmployee = async (req, res) => {
         role: employee.role,
         status: employee.status
       },
+
       temporaryPassword
     });
 
   } catch (error) {
-    console.error("Create employee error:", error);
+
+    console.error(
+      "Create employee error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -145,34 +225,48 @@ const createEmployee = async (req, res) => {
   }
 };
 
+
+// ==========================================
+// GET ALL EMPLOYEES
+// ==========================================
+
 const getEmployees = async (req, res) => {
   try {
-    const employees = await prisma.employee.findMany({
-      select: {
-        id: true,
-        employeeId: true,
-        name: true,
-        email: true,
-        phone: true,
-        address: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: {
-        createdAt: "desc"
-      }
-    });
+
+    const employees =
+      await prisma.employee.findMany({
+        select: {
+          id: true,
+          employeeId: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          role: true,
+          status: true,
+          mustChangePassword: true,
+          createdAt: true,
+          updatedAt: true
+        },
+
+        orderBy: {
+          createdAt: "desc"
+        }
+      });
+
 
     res.status(200).json({
       success: true,
       count: employees.length,
       employees
     });
+
   } catch (error) {
-    console.error("Get employees error:", error);
+
+    console.error(
+      "Get employees error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -181,28 +275,38 @@ const getEmployees = async (req, res) => {
   }
 };
 
+
+// ==========================================
+// GET EMPLOYEE BY ID
+// ==========================================
+
 const getEmployeeById = async (req, res) => {
   try {
+
     const { employeeId } = req.params;
 
-    const employee = await prisma.employee.findUnique({
-      where: {
-        employeeId
-      },
-      select: {
-        id: true,
-        employeeId: true,
-        name: true,
-        email: true,
-        phone: true,
-        address: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
+
+    const employee =
+      await prisma.employee.findUnique({
+        where: {
+          employeeId
+        },
+
+        select: {
+          id: true,
+          employeeId: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          role: true,
+          status: true,
+          mustChangePassword: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
 
     if (!employee) {
       return res.status(404).json({
@@ -211,12 +315,18 @@ const getEmployeeById = async (req, res) => {
       });
     }
 
+
     res.status(200).json({
       success: true,
       employee
     });
+
   } catch (error) {
-    console.error("Get employee error:", error);
+
+    console.error(
+      "Get employee error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -225,8 +335,14 @@ const getEmployeeById = async (req, res) => {
   }
 };
 
+
+// ==========================================
+// UPDATE EMPLOYEE
+// ==========================================
+
 const updateEmployee = async (req, res) => {
   try {
+
     const { employeeId } = req.params;
 
     const {
@@ -238,11 +354,18 @@ const updateEmployee = async (req, res) => {
       status
     } = req.body;
 
-    const employee = await prisma.employee.findUnique({
-      where: {
-        employeeId
-      }
-    });
+
+    // ==========================================
+    // FIND EXISTING EMPLOYEE
+    // ==========================================
+
+    const employee =
+      await prisma.employee.findUnique({
+        where: {
+          employeeId
+        }
+      });
+
 
     if (!employee) {
       return res.status(404).json({
@@ -251,14 +374,22 @@ const updateEmployee = async (req, res) => {
       });
     }
 
-    const emailExists = await prisma.employee.findFirst({
-      where: {
-        email,
-        NOT: {
-          employeeId
+
+    // ==========================================
+    // CHECK EMAIL
+    // ==========================================
+
+    const emailExists =
+      await prisma.employee.findFirst({
+        where: {
+          email,
+
+          NOT: {
+            employeeId
+          }
         }
-      }
-    });
+      });
+
 
     if (emailExists) {
       return res.status(409).json({
@@ -267,19 +398,86 @@ const updateEmployee = async (req, res) => {
       });
     }
 
-    const updatedEmployee = await prisma.employee.update({
-      where: {
-        employeeId
-      },
-      data: {
-        name,
-        email,
-        phone,
-        address,
-        role,
-        status
-      }
+
+    // ==========================================
+    // SAVE OLD VALUES
+    // ==========================================
+
+    const oldValue = {
+      employeeId: employee.employeeId,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      address: employee.address,
+      role: employee.role,
+      status: employee.status
+    };
+
+
+    // ==========================================
+    // UPDATE EMPLOYEE
+    // ==========================================
+
+    const updatedEmployee =
+      await prisma.employee.update({
+        where: {
+          employeeId
+        },
+
+        data: {
+          name,
+          email,
+          phone,
+          address,
+          role,
+          status
+        }
+      });
+
+
+    // ==========================================
+    // SAVE NEW VALUES
+    // ==========================================
+
+    const newValue = {
+      employeeId: updatedEmployee.employeeId,
+      name: updatedEmployee.name,
+      email: updatedEmployee.email,
+      phone: updatedEmployee.phone,
+      address: updatedEmployee.address,
+      role: updatedEmployee.role,
+      status: updatedEmployee.status
+    };
+
+
+    // ==========================================
+    // EMPLOYEE UPDATED AUDIT LOG
+    // ==========================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: "SUPER_ADMIN",
+      actorName: req.user?.name || "Super Admin",
+
+      action: "EMPLOYEE_UPDATED",
+
+      entityType: "EMPLOYEE",
+      entityId: updatedEmployee.id,
+
+      description:
+        `Employee "${updatedEmployee.name}" was updated`,
+
+      oldValue,
+      newValue,
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
     });
+
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
 
     res.status(200).json({
       success: true,
@@ -288,7 +486,11 @@ const updateEmployee = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update employee error:", error);
+
+    console.error(
+      "Update employee error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -298,15 +500,22 @@ const updateEmployee = async (req, res) => {
 };
 
 
+// ==========================================
+// CHANGE EMPLOYEE STATUS
+// ==========================================
+
 const changeEmployeeStatus = async (req, res) => {
   try {
+
     const { employeeId } = req.params;
     const { status } = req.body;
+
 
     const allowedStatus = [
       "ACTIVE",
       "INACTIVE"
     ];
+
 
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({
@@ -315,32 +524,42 @@ const changeEmployeeStatus = async (req, res) => {
       });
     }
 
-    const employee = await prisma.employee.update({
-      where: {
-        employeeId
-      },
-      data: {
-        status
-      },
-      select: {
-        id: true,
-        employeeId: true,
-        name: true,
-        email: true,
-        phone: true,
-        address: true,
-        role: true,
-        status: true
-      }
-    });
+
+    const employee =
+      await prisma.employee.update({
+        where: {
+          employeeId
+        },
+
+        data: {
+          status
+        },
+
+        select: {
+          id: true,
+          employeeId: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          role: true,
+          status: true
+        }
+      });
+
 
     res.status(200).json({
       success: true,
       message: "Employee status updated successfully",
       employee
     });
+
   } catch (error) {
-    console.error("Change employee status error:", error);
+
+    console.error(
+      "Change employee status error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -349,15 +568,28 @@ const changeEmployeeStatus = async (req, res) => {
   }
 };
 
+
+// ==========================================
+// DELETE EMPLOYEE
+// ==========================================
+
 const deleteEmployee = async (req, res) => {
   try {
+
     const { employeeId } = req.params;
 
-    const employee = await prisma.employee.findUnique({
-      where: {
-        employeeId
-      }
-    });
+
+    // ==========================================
+    // FIND EMPLOYEE BEFORE DELETE
+    // ==========================================
+
+    const employee =
+      await prisma.employee.findUnique({
+        where: {
+          employeeId
+        }
+      });
+
 
     if (!employee) {
       return res.status(404).json({
@@ -366,18 +598,72 @@ const deleteEmployee = async (req, res) => {
       });
     }
 
+
+    // ==========================================
+    // SAVE EMPLOYEE DATA FOR AUDIT
+    // ==========================================
+
+    const oldValue = {
+      employeeId: employee.employeeId,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      address: employee.address,
+      role: employee.role,
+      status: employee.status
+    };
+
+
+    // ==========================================
+    // DELETE EMPLOYEE
+    // ==========================================
+
     await prisma.employee.delete({
       where: {
         employeeId
       }
     });
 
+
+    // ==========================================
+    // EMPLOYEE DELETED AUDIT LOG
+    // ==========================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: "SUPER_ADMIN",
+      actorName: req.user?.name || "Super Admin",
+
+      action: "EMPLOYEE_DELETED",
+
+      entityType: "EMPLOYEE",
+      entityId: employee.id,
+
+      description:
+        `Employee "${employee.name}" was deleted`,
+
+      oldValue,
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
     res.status(200).json({
       success: true,
       message: "Employee deleted successfully"
     });
+
   } catch (error) {
-    console.error("Delete employee error:", error);
+
+    console.error(
+      "Delete employee error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -385,6 +671,11 @@ const deleteEmployee = async (req, res) => {
     });
   }
 };
+
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 module.exports = {
   createEmployee,
@@ -394,4 +685,3 @@ module.exports = {
   changeEmployeeStatus,
   deleteEmployee
 };
-

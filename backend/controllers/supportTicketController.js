@@ -1,5 +1,5 @@
 const prisma = require("../config/prisma");
-
+const { createAuditLog } = require("../services/auditLogService");
 
 const createSupportTicket = async (req, res) => {
   try {
@@ -121,6 +121,38 @@ const createSupportTicket = async (req, res) => {
         company: true,
         assignedTo: true
       }
+    });
+
+    // =====================================================
+    // AUDIT LOG - SUPPORT TICKET CREATED
+    // =====================================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: req.user?.role || "UNKNOWN",
+
+      action: "SUPPORT_TICKET_CREATED",
+
+      entityType: "SUPPORT_TICKET",
+
+      entityId: ticket.id,
+
+      companyId: ticket.companyId,
+
+      description:
+        `Support ticket "${ticket.title}" was created for company "${ticket.company?.companyName || "Unknown Company"}"`,
+
+      newValue: {
+        title: ticket.title,
+        description: ticket.description,
+        priority: ticket.priority,
+        status: ticket.status,
+        companyId: ticket.companyId,
+        employeeId: ticket.employeeId
+      },
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
     });
 
     // =====================================================
@@ -276,6 +308,11 @@ const updateSupportTicket = async (req, res) => {
     const ticket = await prisma.supportTicket.findUnique({
       where: {
         id: ticketId
+      },
+
+      include: {
+        company: true,
+        assignedTo: true
       }
     });
 
@@ -310,6 +347,18 @@ const updateSupportTicket = async (req, res) => {
     }
 
     // ============================================
+    // SAVE OLD VALUES
+    // ============================================
+
+    const oldValue = {
+      title: ticket.title,
+      description: ticket.description,
+      priority: ticket.priority,
+      status: ticket.status,
+      employeeId: ticket.employeeId
+    };
+
+    // ============================================
     // UPDATE TICKET
     // ============================================
 
@@ -323,8 +372,6 @@ const updateSupportTicket = async (req, res) => {
         description: description?.trim(),
         priority,
         status,
-
-        // THIS WAS MISSING
         employeeId: finalEmployeeId
       },
 
@@ -335,12 +382,45 @@ const updateSupportTicket = async (req, res) => {
     });
 
     // ============================================
+    // AUDIT LOG - SUPPORT TICKET UPDATED
+    // ============================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: req.user?.role || "UNKNOWN",
+
+      action: "SUPPORT_TICKET_UPDATED",
+
+      entityType: "SUPPORT_TICKET",
+
+      entityId: updatedTicket.id,
+
+      companyId: updatedTicket.companyId,
+
+      description:
+        `Support ticket "${updatedTicket.title}" was updated`,
+
+      oldValue,
+
+      newValue: {
+        title: updatedTicket.title,
+        description: updatedTicket.description,
+        priority: updatedTicket.priority,
+        status: updatedTicket.status,
+        employeeId: updatedTicket.employeeId
+      },
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+    // ============================================
     // NOTIFY SUPER ADMIN
     // ============================================
+
     if (req.user.role === "EMPLOYEE") {
       try {
 
-        // Find the logged-in employee
         const employee = await prisma.employee.findUnique({
           where: {
             id: req.user.id
@@ -358,15 +438,9 @@ const updateSupportTicket = async (req, res) => {
               title: "Support Ticket Updated",
 
               message:
-                `Employee "${employee?.name || "Employee"}" changed the status of support ticket "${updatedTicket.title}" to "${status}".`
+                `Employee "${employee?.name || "Employee"}" updated support ticket "${updatedTicket.title}".`
             }
           });
-
-          console.log("Super Admin notification created successfully.");
-
-        } else {
-
-          console.log("No Super Admin found.");
 
         }
 
@@ -389,37 +463,22 @@ const updateSupportTicket = async (req, res) => {
       finalEmployeeId !== ticket.employeeId
     ) {
       try {
+
         await prisma.notification.create({
           data: {
             employeeId: finalEmployeeId,
+
             title: "Support Ticket Assigned",
-            message: `Support ticket "${updatedTicket.title}" has been assigned to you.`
+
+            message:
+              `Support ticket "${updatedTicket.title}" has been assigned to you.`
           }
         });
+
       } catch (notificationError) {
+
         console.error(
           "Support ticket notification failed:",
-          notificationError
-        );
-      }
-    }
-
-    // ============================================
-    // NOTIFY SUPER ADMIN WHEN EMPLOYEE UPDATES
-    // ============================================
-
-    if (req.user.role === "EMPLOYEE") {
-      try {
-        await prisma.notification.create({
-          data: {
-            superAdminId: req.user.superAdminId,
-            title: "Support Ticket Updated",
-            message: `Employee "${req.user.name}" updated support ticket "${updatedTicket.title}".`
-          }
-        });
-      } catch (notificationError) {
-        console.error(
-          "Super Admin notification failed:",
           notificationError
         );
       }
@@ -436,6 +495,7 @@ const updateSupportTicket = async (req, res) => {
     });
 
   } catch (error) {
+
     console.error(
       "Update Support Ticket Error:",
       error
@@ -447,10 +507,10 @@ const updateSupportTicket = async (req, res) => {
     });
   }
 };
+
 const assignSupportTicket = async (req, res) => {
   try {
     const { id } = req.params;
-
     const { employeeId } = req.body;
 
     const ticket = await prisma.supportTicket.findUnique({
@@ -483,24 +543,59 @@ const assignSupportTicket = async (req, res) => {
       where: {
         id: Number(id)
       },
+
       data: {
         employeeId,
         status: "IN_PROGRESS"
       },
+
       include: {
         company: true,
         assignedTo: true
       }
     });
 
-    res.status(200).json({
+    // ============================================
+    // AUDIT LOG - SUPPORT TICKET ASSIGNED
+    // ============================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: req.user?.role || "UNKNOWN",
+
+      action: "SUPPORT_TICKET_ASSIGNED",
+
+      entityType: "SUPPORT_TICKET",
+
+      entityId: updatedTicket.id,
+
+      companyId: updatedTicket.companyId,
+
+      description:
+        `Support ticket "${updatedTicket.title}" was assigned to "${employee.name}"`,
+
+      oldValue: {
+        employeeId: ticket.employeeId,
+        status: ticket.status
+      },
+
+      newValue: {
+        employeeId: updatedTicket.employeeId,
+        status: updatedTicket.status
+      },
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+    return res.status(200).json({
       success: true,
       message: "Ticket assigned successfully.",
       ticket: updatedTicket
     });
 
   } catch (error) {
-    console.log(error);
+    console.error("Assign Support Ticket Error:", error);
 
     res.status(500).json({
       success: false,
@@ -571,6 +666,11 @@ const deleteSupportTicket = async (req, res) => {
     const ticket = await prisma.supportTicket.findUnique({
       where: {
         id: Number(id)
+      },
+
+      include: {
+        company: true,
+        assignedTo: true
       }
     });
 
@@ -581,11 +681,51 @@ const deleteSupportTicket = async (req, res) => {
       });
     }
 
+    // ============================================
+    // AUDIT LOG - SUPPORT TICKET DELETED
+    // ============================================
+
+    await createAuditLog({
+      actorId: req.user?.id || null,
+      actorType: req.user?.role || "UNKNOWN",
+
+      action: "SUPPORT_TICKET_DELETED",
+
+      entityType: "SUPPORT_TICKET",
+
+      entityId: ticket.id,
+
+      companyId: ticket.companyId,
+
+      description:
+        `Support ticket "${ticket.title}" was deleted`,
+
+      oldValue: {
+        title: ticket.title,
+        description: ticket.description,
+        priority: ticket.priority,
+        status: ticket.status,
+        companyId: ticket.companyId,
+        employeeId: ticket.employeeId
+      },
+
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent")
+    });
+
+    // ============================================
+    // DELETE TICKET
+    // ============================================
+
     await prisma.supportTicket.delete({
       where: {
         id: Number(id)
       }
     });
+
+    // ============================================
+    // RESPONSE
+    // ============================================
 
     res.status(200).json({
       success: true,
@@ -593,7 +733,11 @@ const deleteSupportTicket = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
+
+    console.error(
+      "Delete Support Ticket Error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
