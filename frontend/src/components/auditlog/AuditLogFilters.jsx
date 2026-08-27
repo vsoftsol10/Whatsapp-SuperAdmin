@@ -13,10 +13,18 @@ const AuditLogFilters = ({
   setAction,
   entityType,
   setEntityType,
+  fromDate,
+  setFromDate,
+  toDate,
+  setToDate,
   onClear,
 }) => {
   const hasFilters =
-    search || action || entityType;
+    search ||
+    action ||
+    entityType ||
+    fromDate ||
+    toDate;
 
   return (
     <div className="mb-6 rounded-xl border border-gray-200 bg-white">
@@ -67,7 +75,7 @@ const AuditLogFilters = ({
 
           {/* Search */}
 
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-4">
 
             <label className="mb-1.5 block text-xs font-medium text-gray-600">
               Search
@@ -113,7 +121,7 @@ const AuditLogFilters = ({
 
           {/* Action */}
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
 
             <label className="mb-1.5 block text-xs font-medium text-gray-600">
               Action
@@ -187,7 +195,7 @@ const AuditLogFilters = ({
 
           {/* Entity */}
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
 
             <label className="mb-1.5 block text-xs font-medium text-gray-600">
               Entity
@@ -248,6 +256,74 @@ const AuditLogFilters = ({
               />
 
             </div>
+
+          </div>
+
+          {/* From Date */}
+
+          <div className="lg:col-span-2">
+
+            <label className="mb-1.5 block text-xs font-medium text-gray-600">
+              From Date
+            </label>
+
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) =>
+                setFromDate(e.target.value)
+              }
+              className="
+      h-11
+      w-full
+      rounded-lg
+      border
+      border-gray-300
+      bg-white
+      px-3
+      text-sm
+      text-gray-700
+      outline-none
+      transition
+      focus:border-[#25D366]
+      focus:ring-2
+      focus:ring-[#25D366]/10
+    "
+            />
+
+          </div>
+
+          {/* To Date */}
+
+          <div className="lg:col-span-2">
+
+            <label className="mb-1.5 block text-xs font-medium text-gray-600">
+              To Date
+            </label>
+
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) =>
+                setToDate(e.target.value)
+              }
+              className="
+      h-11
+      w-full
+      rounded-lg
+      border
+      border-gray-300
+      bg-white
+      px-3
+      text-sm
+      text-gray-700
+      outline-none
+      transition
+      focus:border-[#25D366]
+      focus:ring-2
+      focus:ring-[#25D366]/10
+    "
+            />
 
           </div>
 

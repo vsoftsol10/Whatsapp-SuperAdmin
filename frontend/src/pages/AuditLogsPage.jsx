@@ -29,6 +29,9 @@ export default function AuditLogsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+
     // ==========================================
     // VIEW MODAL
     // ==========================================
@@ -202,10 +205,27 @@ export default function AuditLogsPage() {
         const matchesEntity =
             !entityType || log.entityType === entityType;
 
+
+        const logDate = log.createdAt
+            ? new Date(log.createdAt)
+            : null;
+
+        const matchesFromDate =
+            !fromDate ||
+            (logDate &&
+                logDate >= new Date(`${fromDate}T00:00:00`));
+
+        const matchesToDate =
+            !toDate ||
+            (logDate &&
+                logDate <= new Date(`${toDate}T23:59:59.999`));
+
         return (
             matchesSearch &&
             matchesAction &&
-            matchesEntity
+            matchesEntity &&
+            matchesFromDate &&
+            matchesToDate
         );
 
     });
@@ -235,13 +255,15 @@ export default function AuditLogsPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, action, entityType]);
+    }, [search, action, entityType, fromDate, toDate]);
 
     const clearFilters = () => {
 
         setSearch("");
         setAction("");
         setEntityType("");
+        setFromDate("");
+        setToDate("");
 
     };
 
@@ -277,6 +299,10 @@ export default function AuditLogsPage() {
                 setAction={setAction}
                 entityType={entityType}
                 setEntityType={setEntityType}
+                fromDate={fromDate}
+                setFromDate={setFromDate}
+                toDate={toDate}
+                setToDate={setToDate}
                 onClear={clearFilters}
             />
 
