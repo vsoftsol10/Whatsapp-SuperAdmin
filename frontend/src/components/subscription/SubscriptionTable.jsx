@@ -1,6 +1,7 @@
 
 
 import { Bell } from "lucide-react";
+import PageLoader from "../common/PageLoader";
 
 export default function SubscriptionTable({ subscriptions = [], loading, onNotify }) {
   const getStatusStyle = (status) => {
@@ -26,7 +27,7 @@ export default function SubscriptionTable({ subscriptions = [], loading, onNotif
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center">
-        <p className="text-sm text-gray-500">Loading subscriptions...</p>
+        <PageLoader label="Loading subscriptions..." />
       </div>
     );
   }

@@ -277,6 +277,7 @@
 // }
 
 import { MoreVertical } from "lucide-react";
+import PageLoader from "../common/PageLoader";
 import { useEffect, useRef, useState } from "react";
 
 export default function SupportTicketTable({
@@ -391,7 +392,7 @@ export default function SupportTicketTable({
   if (loading) {
     return (
       <div className="rounded-2xl bg-white p-10 text-center shadow">
-        Loading tickets...
+        <PageLoader label="Loading tickets..." />
       </div>
     );
   }

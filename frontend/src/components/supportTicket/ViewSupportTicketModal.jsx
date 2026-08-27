@@ -266,6 +266,7 @@ import {
   FileText,
   MessageSquare,
 } from "lucide-react";
+import PageLoader from "../common/PageLoader";
 
 import { useEffect, useState } from "react";
 
@@ -570,17 +571,9 @@ export default function ViewSupportTicketModal({
               {/* Timeline Body */}
 
               <div className="max-h-[350px] overflow-y-auto p-5">
-                                {loadingNotes ? (
+                {loadingNotes ? (
 
-                  <div className="flex flex-col items-center justify-center py-12">
-
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-200 border-t-[#25D366]" />
-
-                    <p className="mt-4 text-sm text-gray-500">
-                      Loading ticket updates...
-                    </p>
-
-                  </div>
+                  <PageLoader label="Loading ticket updates..." className="py-2" />
 
                 ) : notes.length === 0 ? (
 
@@ -703,7 +696,6 @@ export default function ViewSupportTicketModal({
     </div>
   );
 }
-
 /* ==========================================================
    Info Card Component
 ========================================================== */
@@ -731,4 +723,3 @@ function InfoCard({ icon, label, value }) {
     </div>
   );
 }
-            

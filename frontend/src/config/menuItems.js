@@ -45,12 +45,12 @@ export const menuItems = [
     path: "/tickets",
     roles: ["SUPER_ADMIN", "EMPLOYEE"]
   },
-  {
-    name: "Upgrade Requests",
-    icon: ArrowUpCircle,
-    path: "/upgrade-requests",
-    roles: ["SUPER_ADMIN"]
-  },
+  // {
+  //   name: "Upgrade Requests",
+  //   icon: ArrowUpCircle,
+  //   path: "/upgrade-requests",
+  //   roles: ["SUPER_ADMIN"]
+  // },
   {
     name: "Payment",
     icon: Wallet,

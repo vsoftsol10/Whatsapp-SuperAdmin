@@ -8,6 +8,8 @@ import {
 
 import AuditLogTable from "../components/auditlog/AuditLogTable";
 import AuditLogFilters from "../components/auditlog/AuditLogFilters";
+import PageLoader from "../components/common/PageLoader";
+import Pagination from "../components/common/Pagination";
 
 import {
     X,
@@ -23,6 +25,9 @@ export default function AuditLogsPage() {
     const [search, setSearch] = useState("");
     const [action, setAction] = useState("");
     const [entityType, setEntityType] = useState("");
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
 
     // ==========================================
     // VIEW MODAL
@@ -207,8 +212,30 @@ export default function AuditLogsPage() {
 
 
     // ==========================================
+    // PAGINATION
+    // ==========================================
+
+    const totalPages = Math.ceil(
+        filteredLogs.length / itemsPerPage
+    );
+
+    const startIndex =
+        (currentPage - 1) * itemsPerPage;
+
+    const paginatedLogs =
+        filteredLogs.slice(
+            startIndex,
+            startIndex + itemsPerPage
+        );
+
+
+    // ==========================================
     // CLEAR FILTERS
     // ==========================================
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, action, entityType]);
 
     const clearFilters = () => {
 
@@ -217,7 +244,6 @@ export default function AuditLogsPage() {
         setEntityType("");
 
     };
-
 
     return (
 
@@ -262,10 +288,7 @@ export default function AuditLogsPage() {
             {loading && (
 
                 <div className="rounded-xl bg-white p-6 shadow">
-
-                    <p className="text-gray-500">
-                        Loading audit logs...
-                    </p>
+                    <PageLoader label="Loading audit logs..." />
 
                 </div>
 
@@ -295,11 +318,22 @@ export default function AuditLogsPage() {
 
             {!loading && !error && (
 
-                <AuditLogTable
-                    auditLogs={filteredLogs}
-                    onView={handleView}
-                    onDelete={handleDelete}
-                />
+                <>
+                    <AuditLogTable
+                        auditLogs={paginatedLogs}
+                        onView={handleView}
+                        onDelete={handleDelete}
+                    />
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        setCurrentPage={setCurrentPage}
+                        totalItems={filteredLogs.length}
+                        itemsPerPage={itemsPerPage}
+                        itemName="audit logs"
+                    />
+                </>
 
             )}
 
@@ -349,13 +383,7 @@ export default function AuditLogsPage() {
 
                             {viewLoading ? (
 
-                                <div className="py-10 text-center">
-
-                                    <p className="text-gray-500">
-                                        Loading audit log...
-                                    </p>
-
-                                </div>
+                                <PageLoader label="Loading audit log..." />
 
                             ) : (
 

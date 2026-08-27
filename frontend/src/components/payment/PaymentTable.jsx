@@ -1,5 +1,6 @@
 import { Eye } from "lucide-react";
 import PaymentStatusBadge from "./PaymentStatusBadge";
+import PageLoader from "../common/PageLoader";
 
 export default function PaymentTable({
   payments = [],
@@ -9,7 +10,7 @@ export default function PaymentTable({
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white py-20 text-center shadow-sm">
-        <p className="text-gray-500">Loading payments...</p>
+        <PageLoader label="Loading payments..." />
       </div>
     );
   }

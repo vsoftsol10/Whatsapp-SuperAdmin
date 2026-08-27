@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import SubscriptionPlanList from "../components/subscriptionPlan/SubscriptionPlanList";
 import AddSubscriptionPlanModal from "../components/subscriptionPlan/AddSubscriptionPlanModal";
+import PageLoader from "../components/common/PageLoader";
 
 import {
   getSubscriptionPlans,
@@ -132,7 +133,7 @@ export default function SubscriptionPlansPage() {
       {/* Plans */}
       {loading ? (
         <div className="py-20 text-center">
-          <p className="text-gray-500">Loading plans...</p>
+          <PageLoader label="Loading plans..." />
         </div>
       ) : (
         <SubscriptionPlanList

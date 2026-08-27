@@ -6,6 +6,7 @@ import AddEmployeeModal from "../components/employee/AddEmployeeModal";
 import ViewEmployeeModal from "../components/employee/ViewEmployeeModal";
 import EditEmployeeModal from "../components/employee/EditEmployeeModal";
 import Pagination from "../components/common/Pagination";
+import ConfirmationModal from "../components/common/ConfirmationModal";
 import { toast } from "react-hot-toast";
 
 import {
@@ -32,6 +33,7 @@ export default function EmployeesPage() {
   const [openEdit, setOpenEdit] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -103,19 +105,22 @@ export default function EmployeesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteEmployee = async (employee) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${employee.name}?`
-    );
+  const handleDeleteEmployee = (employee) => {
+    setEmployeeToDelete(employee);
+  };
 
-    if (!confirmDelete) return;
+  const confirmDeleteEmployee = async () => {
+    if (!employeeToDelete) return;
 
     try {
-      await deleteEmployee(employee.employeeId);
+      setDeleteLoading(true);
+
+      await deleteEmployee(employeeToDelete.employeeId);
 
       toast.success("Employee deleted successfully!");
 
       loadEmployees();
+      setEmployeeToDelete(null);
     } catch (error) {
       console.log(error.response?.data);
 
@@ -123,6 +128,8 @@ export default function EmployeesPage() {
         error.response?.data?.message ||
         "Failed to delete employee."
       );
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -253,6 +260,15 @@ export default function EmployeesPage() {
         }}
         onUpdate={handleUpdateEmployee}
         loading={editLoading}
+      />
+
+      <ConfirmationModal
+        open={Boolean(employeeToDelete)}
+        message="Are you sure you want to delete this employee?"
+        itemName={employeeToDelete?.name}
+        onCancel={() => setEmployeeToDelete(null)}
+        onConfirm={confirmDeleteEmployee}
+        loading={deleteLoading}
       />
 
     </div>

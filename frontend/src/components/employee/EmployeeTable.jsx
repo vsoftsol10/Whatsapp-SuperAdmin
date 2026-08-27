@@ -226,6 +226,7 @@
 // }
 
 import { MoreVertical } from "lucide-react";
+import PageLoader from "../common/PageLoader";
 import { useEffect, useRef, useState } from "react";
 
 export default function EmployeeTable({
@@ -307,9 +308,7 @@ export default function EmployeeTable({
   if (loading) {
     return (
       <div className="rounded-2xl bg-white p-20 text-center shadow-sm">
-        <p className="text-gray-500">
-          Loading employees...
-        </p>
+        <PageLoader label="Loading employees..." />
       </div>
     );
   }

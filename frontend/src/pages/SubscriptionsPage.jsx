@@ -24,13 +24,14 @@ export default function SubscriptionPage() {
   const [itemsPerPage] = useState(10);
   const loadData = async () => {
     try {
-      const plansData = await getSubscriptionPlans();
+      const [plansData, subscriptionsData, statsData] = await Promise.all([
+        getSubscriptionPlans(),
+        getSubscriptions(),
+        getSubscriptionStats()
+      ]);
+
       setPlans(plansData.plans || []);
-
-      const subscriptionsData = await getSubscriptions();
       setSubscriptions(subscriptionsData.subscriptions || []);
-
-      const statsData = await getSubscriptionStats();
       setStats(statsData.stats || {});
 
     } catch (error) {

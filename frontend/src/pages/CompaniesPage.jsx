@@ -9,6 +9,8 @@ import ViewCompanyModal from "../components/companies/ViewCompanyModal";
 import EditCompanyModal from "../components/companies/EditCompanyModal";
 import CompanyCardView from "../components/companies/CompanyCardView";
 import CompanyPagination from "../components/companies/CompanyPagination";
+import ConfirmationModal from "../components/common/ConfirmationModal";
+import PageLoader from "../components/common/PageLoader";
 
 
 import {
@@ -25,6 +27,7 @@ export default function CompaniesPage() {
 
   const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("ALL");
@@ -39,10 +42,20 @@ export default function CompaniesPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companyToDelete, setCompanyToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    loadCompanies();
-    loadStats();
+    const loadInitialData = async () => {
+      await Promise.all([
+        loadCompanies(),
+        loadStats()
+      ]);
+
+      setLoading(false);
+    };
+
+    loadInitialData();
   }, []);
 
   const loadCompanies = async () => {
@@ -177,15 +190,17 @@ export default function CompaniesPage() {
 
   // ---------------- DELETE ----------------
 
-  const handleDelete = async (company) => {
-    const confirmDelete = window.confirm(
-      `Delete ${company.companyName}?`
-    );
+  const handleDelete = (company) => {
+    setCompanyToDelete(company);
+  };
 
-    if (!confirmDelete) return;
+  const confirmDelete = async () => {
+    if (!companyToDelete) return;
 
     try {
-      const res = await deleteCompany(company.companyId);
+      setDeleteLoading(true);
+
+      const res = await deleteCompany(companyToDelete.companyId);
 
       toast.success(
         res.message || "Company deleted successfully"
@@ -193,12 +208,15 @@ export default function CompaniesPage() {
 
       loadCompanies();
       loadStats();
+      setCompanyToDelete(null);
 
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
         "Failed to delete company"
       );
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -234,6 +252,14 @@ export default function CompaniesPage() {
     startIndex,
     startIndex + itemsPerPage
   );
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <PageLoader variant="page" label="Loading companies..." />
+      </div>
+    );
+  }
 
   return (
 
@@ -314,6 +340,15 @@ export default function CompaniesPage() {
 
         onSubmit={handleUpdateCompany}
 
+      />
+
+      <ConfirmationModal
+        open={Boolean(companyToDelete)}
+        message="Are you sure you want to delete this company?"
+        itemName={companyToDelete?.companyName}
+        onCancel={() => setCompanyToDelete(null)}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
       />
 
     </div>

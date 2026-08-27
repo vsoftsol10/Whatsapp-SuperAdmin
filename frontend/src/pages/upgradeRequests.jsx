@@ -4,6 +4,7 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/upgradeRequestService";
+import PageLoader from "../components/common/PageLoader";
 
 function UpgradeRequests() {
   const [requests, setRequests] = useState([]);
@@ -66,7 +67,7 @@ function UpgradeRequests() {
   if (loading) {
     return (
       <div className="p-6">
-        Loading upgrade requests...
+        <PageLoader variant="page" label="Loading upgrade requests..." />
       </div>
     );
   }

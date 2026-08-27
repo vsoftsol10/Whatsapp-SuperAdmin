@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { menuItems } from "../../config/menuItems";
+import PageLoader from "../common/PageLoader";
 export default function Header() {
   const navigate = useNavigate();
 
@@ -21,6 +22,7 @@ export default function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -49,13 +51,21 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadNotifications = async () => {
+  const loadNotifications = async (showLoading = false) => {
     try {
+      if (showLoading) {
+        setNotificationsLoading(true);
+      }
+
       const res = await api.get("/notifications");
 
       setNotifications(res.data.notifications);
     } catch (err) {
       console.log(err);
+    } finally {
+      if (showLoading) {
+        setNotificationsLoading(false);
+      }
     }
   };
 
@@ -93,7 +103,7 @@ export default function Header() {
   };
 
   useEffect(() => {
-    loadNotifications();
+    loadNotifications(true);
 
     const interval = setInterval(() => {
       loadNotifications();
@@ -285,7 +295,9 @@ Modules
                   Notifications
                 </div>
 
-                {notifications.length === 0 ? (
+                {notificationsLoading ? (
+                  <PageLoader label="Loading notifications..." className="py-6" />
+                ) : notifications.length === 0 ? (
                   <p className="p-4 text-gray-500 text-sm">
                     No notifications
                   </p>

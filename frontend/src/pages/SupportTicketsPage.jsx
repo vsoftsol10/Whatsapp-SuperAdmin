@@ -9,6 +9,7 @@ import ViewSupportTicketModal from "../components/supportTicket/ViewSupportTicke
 import EditSupportTicketModal from "../components/supportTicket/EditSupportTicketModal";
 import { toast } from "react-hot-toast";
 import Pagination from "../components/common/Pagination";
+import ConfirmationModal from "../components/common/ConfirmationModal";
 
 import {
   getSupportTickets,
@@ -28,6 +29,7 @@ export default function SupportTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState("ALL");
@@ -39,6 +41,7 @@ export default function SupportTicketsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [ticketToDelete, setTicketToDelete] = useState(null);
 
   const loadData = async () => {
     try {
@@ -117,24 +120,29 @@ export default function SupportTicketsPage() {
     }
   };
 
-  const handleDeleteTicket = async (ticket) => {
-    const confirmDelete = window.confirm(
-      `Delete ticket #${ticket.id}?`
-    );
+  const handleDeleteTicket = (ticket) => {
+    setTicketToDelete(ticket);
+  };
 
-    if (!confirmDelete) return;
+  const confirmDeleteTicket = async () => {
+    if (!ticketToDelete) return;
 
     try {
-      await deleteSupportTicket(ticket.id);
+      setDeleteLoading(true);
+
+      await deleteSupportTicket(ticketToDelete.id);
 
       toast.success("Ticket deleted successfully!");
 
       loadData();
+      setTicketToDelete(null);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
         "Failed to delete ticket."
       );
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -261,6 +269,15 @@ export default function SupportTicketsPage() {
         }}
         onUpdate={handleUpdateTicket}
         loading={editLoading}
+      />
+
+      <ConfirmationModal
+        open={Boolean(ticketToDelete)}
+        message="Are you sure you want to delete this support ticket?"
+        itemName={ticketToDelete?.title || `Ticket #${ticketToDelete?.id}`}
+        onCancel={() => setTicketToDelete(null)}
+        onConfirm={confirmDeleteTicket}
+        loading={deleteLoading}
       />
 
     </div>

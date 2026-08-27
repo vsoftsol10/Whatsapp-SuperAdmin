@@ -10,6 +10,7 @@ import StatCard from "../components/dashboard/StatCard";
 import CompanyGrowthChart from "../components/dashboard/CompanyGrowthChart";
 import SubscriptionChart from "../components/dashboard/SubscriptionChart";
 import SupportTicketTable from "../components/dashboard/SupportTicketTable";
+import PageLoader from "../components/common/PageLoader";
 
 import { getDashboard } from "../api/dashboardApi";
 
@@ -57,9 +58,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-80 items-center justify-center text-lg">
-        Loading Dashboard...
-      </div>
+      <PageLoader variant="page" label="Loading dashboard..." />
     );
   }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import PageLoader from "../common/PageLoader";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Forgot password
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -24,7 +26,11 @@ export default function LoginForm() {
  const handleLogin = async (e) => {
   e.preventDefault();
 
+  if (loginLoading) return;
+
   try {
+    setLoginLoading(true);
+
     const payload = {
       email: identifier.trim().toLowerCase(),
       password,
@@ -67,6 +73,8 @@ export default function LoginForm() {
       err.response?.data?.message ||
       "Unable to login"
     );
+  } finally {
+    setLoginLoading(false);
   }
 };
 
@@ -283,9 +291,17 @@ export default function LoginForm() {
 
         <button
           type="submit"
-          className="w-full h-12 rounded-xl bg-black text-white hover:bg-yellow-400 hover:text-black transition"
+          disabled={loginLoading}
+          className="w-full h-12 rounded-xl bg-black text-white hover:bg-yellow-400 hover:text-black transition disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Sign In
+          {loginLoading ? (
+            <PageLoader
+              variant="inline"
+              label="Signing in..."
+              spinnerClassName="border-white/30 border-t-white"
+              textClassName="text-white"
+            />
+          ) : "Sign In"}
         </button>
 
       </form>
