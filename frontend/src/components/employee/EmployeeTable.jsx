@@ -332,7 +332,7 @@ export default function EmployeeTable({
 
       <div className="overflow-x-auto">
 
-        <table className="min-w-full">
+        <table className="min-w-[800px] w-full">
 
           {/* =========================
               HEADER

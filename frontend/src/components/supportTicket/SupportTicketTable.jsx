@@ -414,7 +414,7 @@ export default function SupportTicketTable({
 
       <div className="overflow-x-auto">
 
-        <table className="min-w-full">
+        <table className="min-w-[900px] w-full">
 
           {/* =========================
               HEADER

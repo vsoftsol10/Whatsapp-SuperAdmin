@@ -255,7 +255,7 @@ export default function CompaniesPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <PageLoader variant="page" label="Loading companies..." />
       </div>
     );
@@ -263,7 +263,7 @@ export default function CompaniesPage() {
 
   return (
 
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
 
       <CompanyHeader
         onAddCompany={() => setShowAddModal(true)}

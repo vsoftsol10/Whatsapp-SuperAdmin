@@ -10,9 +10,9 @@ export default function ViewEmployeeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
 
           <div>
 
@@ -35,7 +35,7 @@ export default function ViewEmployeeModal({
 
         </div>
 
-        <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
+        <div className="grid flex-1 grid-cols-1 gap-5 overflow-y-auto p-4 sm:p-6 md:grid-cols-2">
 
           <InfoCard
             icon={<BadgeCheck size={18} />}
@@ -100,7 +100,7 @@ export default function ViewEmployeeModal({
 
         </div>
 
-        <div className="flex justify-end border-t border-gray-200 px-6 py-4">
+        <div className="flex shrink-0 justify-end border-t border-gray-200 px-4 py-4 sm:px-6">
 
           <button
             onClick={onClose}

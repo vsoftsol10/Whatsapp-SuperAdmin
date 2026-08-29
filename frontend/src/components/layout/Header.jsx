@@ -6,13 +6,14 @@ import {
   ChevronDown,
   User,
   LogOut,
-  Trash2
+  Trash2,
+  Menu
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { menuItems } from "../../config/menuItems";
 import PageLoader from "../common/PageLoader";
-export default function Header() {
+export default function Header({ onMenuClick }) {
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -160,7 +161,7 @@ export default function Header() {
         fixed
         top-0
         right-0
-        left-72
+        left-0
         h-20
         bg-white
         border-b
@@ -168,13 +169,18 @@ export default function Header() {
         flex
         items-center
         justify-between
-        px-8
+        px-4
+        sm:px-6
+        lg:left-72
+        lg:px-8
         z-40
         "
       >
         {/* Search */}
 
-        <div className="relative w-[650px]">
+        <div className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none">
+          <button type="button" aria-label="Open navigation" onClick={onMenuClick} className="rounded-lg p-2 hover:bg-gray-100 lg:hidden"><Menu size={22} /></button>
+          <div className="relative min-w-0 flex-1 lg:w-[650px] lg:flex-none">
 
           <Search
             size={20}
@@ -265,6 +271,7 @@ Modules
           }
 
 
+          </div>
         </div>
 
         {/* Right */}
@@ -273,7 +280,9 @@ Modules
           className="
           flex
           items-center
-          gap-6
+          gap-2
+          sm:gap-4
+          lg:gap-6
           "
         >
 
@@ -398,7 +407,7 @@ Modules
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
 
-              <div className="text-left">
+              <div className="hidden text-left sm:block">
 
                 <p className="font-semibold text-sm">
                   {user?.name}
@@ -414,7 +423,7 @@ Modules
 
               <ChevronDown
                 size={18}
-                className={`transition ${open ? "rotate-180" : ""}`}
+                className={`hidden transition sm:block ${open ? "rotate-180" : ""}`}
               />
 
             </button>
@@ -511,11 +520,13 @@ Modules
 
           <div
             className="
-            w-[380px]
+            w-full
+            max-w-[380px]
             bg-white
             rounded-2xl
             shadow-2xl
-            p-6
+            p-4
+            sm:p-6
             "
           >
 

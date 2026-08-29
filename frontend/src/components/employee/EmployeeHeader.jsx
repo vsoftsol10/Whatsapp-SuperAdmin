@@ -18,7 +18,7 @@ export default function EmployeeHeader({ onAddEmployee }) {
 
       <button
         onClick={onAddEmployee}
-        className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#20bd5a]"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#20bd5a] sm:w-auto"
       >
         <Plus size={18} />
         Add Employee

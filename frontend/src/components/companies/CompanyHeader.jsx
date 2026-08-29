@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 export default function CompanyHeader({ onAddCompany }) {
 
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
@@ -17,7 +17,7 @@ export default function CompanyHeader({ onAddCompany }) {
 
       <button
         onClick={onAddCompany}
-        className="flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 sm:w-auto"
       >
         <Plus size={18} />
         Add Company

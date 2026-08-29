@@ -13,12 +13,13 @@ import {
   Settings,
   ArrowUpCircle,
   History,
-  LogOut
+  LogOut,
+  X
 } from "lucide-react";
 
 const role = localStorage.getItem("role");
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const role = localStorage.getItem("role") || "SUPER_ADMIN";
 
   const user =
@@ -39,11 +40,13 @@ const handleLogout = () => {
 
 
   return (
-    <aside className="fixed top-0 left-0 flex h-screen w-72 flex-col bg-[#111827] text-white shadow-xl">
+    <>
+      {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-black/40 lg:hidden" />}
+      <aside className={`fixed top-0 left-0 z-50 flex h-screen w-72 flex-col bg-[#111827] text-white shadow-xl transition-transform duration-300 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
 
       {/* Logo */}
 
-      <div className="flex h-20 items-center border-b border-gray-700 px-6">
+      <div className="flex h-20 items-center justify-between border-b border-gray-700 px-6">
 
         <div>
 
@@ -61,6 +64,7 @@ const handleLogout = () => {
           </p>
 
         </div>
+        <button type="button" aria-label="Close navigation" onClick={onClose} className="rounded-lg p-2 hover:bg-gray-800 lg:hidden"><X size={20} /></button>
 
       </div>
 
@@ -83,6 +87,7 @@ const handleLogout = () => {
               <NavLink
                 key={item.name}
                 to={item.path}
+                onClick={onClose}
                 className={({ isActive }) =>
                   `mb-1 flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
                     isActive
@@ -106,6 +111,7 @@ const handleLogout = () => {
 
       </div>
 
-    </aside>
+      </aside>
+    </>
   );
 }

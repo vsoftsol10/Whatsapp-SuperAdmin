@@ -29,7 +29,7 @@ export default function EmployeeToolbar({
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        className="h-11 rounded-xl border border-gray-300 px-4 text-sm outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100"
+        className="h-11 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100 md:w-auto"
       >
         <option value="ALL">All Status</option>
         <option value="ACTIVE">Active</option>

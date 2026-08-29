@@ -66,20 +66,20 @@ function UpgradeRequests() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <PageLoader variant="page" label="Loading upgrade requests..." />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="text-2xl font-bold mb-6">
         Upgrade Requests
       </h1>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
+      <div className="overflow-x-auto rounded-xl bg-white shadow">
+        <table className="min-w-[720px] w-full">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3 text-left">

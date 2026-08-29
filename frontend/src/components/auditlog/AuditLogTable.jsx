@@ -255,7 +255,7 @@ const AuditLogTable = ({
   return (
     <div className="relative w-full overflow-visible rounded-xl bg-white shadow-sm">
 
-      <table className="w-full table-fixed text-left text-sm">
+      <table className="min-w-[900px] w-full table-fixed text-left text-sm">
 
         {/* ======================================
             TABLE HEADER

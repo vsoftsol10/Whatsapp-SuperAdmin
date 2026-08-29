@@ -58,7 +58,7 @@ export default function CompanyTable({
       "
     >
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-[900px] w-full">
 
           {/* =========================
               HEADER

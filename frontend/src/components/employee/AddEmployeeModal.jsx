@@ -666,7 +666,7 @@ export default function AddEmployeeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5">
 
-      <div className="flex h-[720px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex h-auto max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:h-[720px]">
 
         {/* ================= HEADER ================= */}
 

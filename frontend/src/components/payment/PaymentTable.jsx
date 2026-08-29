@@ -26,7 +26,7 @@ export default function PaymentTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-[900px] w-full">
           <thead className="bg-gray-50">
             <tr className="text-left text-sm font-semibold text-gray-700">
               <th className="px-6 py-4">Payment ID</th>

@@ -91,7 +91,7 @@ export default function SupportTicketTable({
       {tickets.length > 0 ? (
         <div className="overflow-x-auto">
 
-          <table className="min-w-full">
+          <table className="min-w-[680px] w-full">
 
             <thead className="bg-gray-50">
 

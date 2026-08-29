@@ -31,7 +31,7 @@ export default function SupportTicketSearch({
       <select
         value={priority}
         onChange={(e) => setPriority(e.target.value)}
-        className="h-12 min-w-[180px] rounded-xl border border-gray-300 px-4 outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100"
+        className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100 md:w-auto md:min-w-[180px]"
       >
         <option value="ALL">All Priority</option>
         <option value="LOW">Low</option>
@@ -43,7 +43,7 @@ export default function SupportTicketSearch({
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        className="h-12 min-w-[180px] rounded-xl border border-gray-300 px-4 outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100"
+        className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100 md:w-auto md:min-w-[180px]"
       >
         <option value="ALL">All Status</option>
         <option value="OPEN">Open</option>

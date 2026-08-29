@@ -11,10 +11,10 @@ export default function PaymentDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 
-      <div className="w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-4 sm:px-6">
 
           <div>
             <h2 className="text-xl font-bold text-gray-900">
@@ -36,7 +36,7 @@ export default function PaymentDetailsModal({
         </div>
 
         {/* Body */}
-        <div className="grid grid-cols-2 gap-6 p-6">
+        <div className="grid flex-1 grid-cols-1 gap-5 overflow-y-auto p-4 sm:grid-cols-2 sm:gap-6 sm:p-6">
 
           <InfoItem
             label="Payment ID"
@@ -131,7 +131,7 @@ export default function PaymentDetailsModal({
 
         {/* Footer */}
 
-        <div className="flex justify-end border-t px-6 py-4">
+        <div className="flex shrink-0 justify-end border-t px-4 py-4 sm:px-6">
 
           <button
             onClick={onClose}

@@ -20,7 +20,7 @@ export default function SupportTicketHeader({
 
       <button
         onClick={onAddTicket}
-        className="flex items-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 font-semibold text-white transition hover:bg-[#1fb85a]"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 font-semibold text-white transition hover:bg-[#1fb85a] md:w-auto"
       >
         <Plus size={20} />
 

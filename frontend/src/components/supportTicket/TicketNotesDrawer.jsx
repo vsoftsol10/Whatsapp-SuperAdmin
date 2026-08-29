@@ -103,9 +103,9 @@ export default function TicketNotesDrawer({
 
             <div className="
 absolute right-0 top-0
-h-full w-[420px]
+h-full w-full max-w-[420px]
 bg-white shadow-xl
-p-6
+p-4 sm:p-6
 animate-slide
 ">
 
@@ -125,7 +125,7 @@ animate-slide
 
 
 
-                <div className="mt-5 space-y-4 h-[60%] overflow-y-auto">
+                <div className="mt-5 h-[60%] space-y-4 overflow-y-auto">
 
 
                     {

@@ -43,7 +43,7 @@ export default function SubscriptionTable({ subscriptions = [], loading, onNotif
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-[900px] w-full">
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">

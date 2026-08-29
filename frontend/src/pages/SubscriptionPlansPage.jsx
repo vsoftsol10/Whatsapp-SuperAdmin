@@ -93,10 +93,10 @@ export default function SubscriptionPlansPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3 sm:items-center sm:gap-4">
           <button
             onClick={() => navigate("/subscriptions")}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:bg-gray-100"
@@ -122,7 +122,7 @@ export default function SubscriptionPlansPage() {
               setEditPlan(null);
               setOpenModal(true);
             }}
-            className="flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-white hover:bg-[#1fb85a]"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-white hover:bg-[#1fb85a] sm:w-auto"
           >
             <Plus size={18} />
             Add Plan

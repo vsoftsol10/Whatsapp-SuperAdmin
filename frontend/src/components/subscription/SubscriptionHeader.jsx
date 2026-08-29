@@ -34,7 +34,7 @@ export default function SubscriptionHeader({
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
           Subscription Plans
@@ -48,7 +48,7 @@ export default function SubscriptionHeader({
       {showPlansButton && (
         <button
           onClick={() => navigate("/subscription-plans")}
-          className="rounded-xl bg-green-600 px-5 py-3 text-white"
+          className="w-full rounded-xl bg-green-600 px-5 py-3 text-white sm:w-auto"
         >
           Plans
         </button>
