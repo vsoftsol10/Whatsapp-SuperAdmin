@@ -58,12 +58,14 @@ const supportTicketNoteRoutes = require("./routes/supportTicketNoteRoutes");
 const superAdminUpgradeRequestRoutes = require("./routes/superAdminUpgradeRequestRoutes");
 const auditLogRoutes = require("./routes/auditLogRoutes");
 const publicPlanRoutes = require("./routes/publicPlanRoutes");
+const trialSignupRoutes = require("./routes/trialSignupRoutes");
 
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/subscription-plans", subscriptionPlanRoutes);
 app.use("/api/public/plans", publicPlanRoutes);
+app.use("/api/public/trial-signup", trialSignupRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/subscriptions", subscriptionReminderRoutes);
 app.use("/api/employees", employeeRoutes);
