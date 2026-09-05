@@ -19,6 +19,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "https://watsupad.thevsoft.com",
+  "https://watsupcl.thevsoft.com",
 ];
 
 app.use(
@@ -54,11 +55,14 @@ const supportTicketRoutes = require("./routes/supportTicketRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const razorpayRoutes = require("./routes/razorpayRoutes");
 const supportTicketNoteRoutes = require("./routes/supportTicketNoteRoutes");
 const superAdminUpgradeRequestRoutes = require("./routes/superAdminUpgradeRequestRoutes");
 const auditLogRoutes = require("./routes/auditLogRoutes");
 const publicPlanRoutes = require("./routes/publicPlanRoutes");
 const trialSignupRoutes = require("./routes/trialSignupRoutes");
+const demoRequestRoutes = require("./routes/demoRequestRoutes");
+
 
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/companies", companyRoutes);
@@ -66,6 +70,7 @@ app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/subscription-plans", subscriptionPlanRoutes);
 app.use("/api/public/plans", publicPlanRoutes);
 app.use("/api/public/trial-signup", trialSignupRoutes);
+app.use("/api/demo-requests", demoRequestRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/subscriptions", subscriptionReminderRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -73,6 +78,7 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/razorpay", razorpayRoutes);
 app.use(
   "/api/superadmin/upgrade-requests",
   superAdminUpgradeRequestRoutes

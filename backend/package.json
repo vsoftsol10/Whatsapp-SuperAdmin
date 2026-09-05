@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.6.0",
     "prisma": "^6.16.2",
+    "razorpay": "^2.9.8",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {

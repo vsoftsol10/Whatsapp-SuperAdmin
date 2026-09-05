@@ -69,13 +69,21 @@ const createPayment = async (req, res) => {
 // UPDATE PAYMENT STATUS
 const updatePaymentStatus = async (req, res) => {
   try {
-    const { paymentStatus, transactionId, gateway } = req.body;
+    const {
+      paymentStatus,
+      transactionId,
+      gateway,
+      razorpayOrderId,
+      razorpayPaymentId,
+    } = req.body;
 
     const payment = await paymentService.updatePaymentStatus(
       req.params.id,
       paymentStatus,
       transactionId,
-      gateway
+      gateway,
+      razorpayOrderId,
+      razorpayPaymentId
     );
 
     res.status(200).json({

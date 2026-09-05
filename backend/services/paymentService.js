@@ -41,6 +41,7 @@ const createPayment = async (data) => {
   return await prisma.payment.create({
     data: {
       paymentId: data.paymentId,
+
       companyId: data.companyId || null,
       subscriptionId: data.subscriptionId || null,
       planId: data.planId || null,
@@ -61,6 +62,11 @@ const createPayment = async (data) => {
       gateway: data.gateway || null,
       transactionId: data.transactionId || null,
       invoiceNumber: data.invoiceNumber || null,
+
+      // Razorpay details
+      razorpayOrderId: data.razorpayOrderId || null,
+      razorpayPaymentId: data.razorpayPaymentId || null,
+
       paidAt: data.paidAt || null,
     },
   });
@@ -71,7 +77,9 @@ const updatePaymentStatus = async (
   id,
   paymentStatus,
   transactionId,
-  gateway
+  gateway,
+  razorpayOrderId,
+  razorpayPaymentId
 ) => {
   return await prisma.payment.update({
     where: {
@@ -79,8 +87,14 @@ const updatePaymentStatus = async (
     },
     data: {
       paymentStatus,
-      transactionId,
-      gateway,
+
+      transactionId: transactionId || null,
+      gateway: gateway || null,
+
+      // Razorpay details
+      razorpayOrderId: razorpayOrderId || null,
+      razorpayPaymentId: razorpayPaymentId || null,
+
       paidAt:
         paymentStatus === "PAID"
           ? new Date()
