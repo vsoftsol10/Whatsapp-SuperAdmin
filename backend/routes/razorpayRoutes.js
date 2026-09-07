@@ -366,7 +366,7 @@ router.post("/verify-payment", async (req, res) => {
 
     expiryDate.setDate(
       expiryDate.getDate() +
-        subscriptionPlan.durationDays
+      subscriptionPlan.durationDays
     );
 
     // ==================================================
@@ -618,6 +618,27 @@ router.post("/verify-payment", async (req, res) => {
     console.log("Payment:", result.payment.paymentId);
     console.log("==========================================");
 
+    // ======================================================
+    // CREATE SUPER ADMIN NOTIFICATION
+    // ======================================================
+
+    const superAdmin = await prisma.superAdmin.findFirst({
+      select: {
+        id: true,
+      },
+    });
+
+    if (superAdmin) {
+      await prisma.notification.create({
+        data: {
+          superAdminId: superAdmin.id,
+          title: "New Company Registered",
+          message: `${result.company.companyName} (${result.company.companyId}) successfully subscribed to the ${subscriptionPlan.planName} plan. Payment of ₹${result.payment.totalAmount} received. Payment ID: ${result.payment.paymentId}.`,
+        },
+      });
+
+      console.log("Super Admin notification created");
+    }
     // ==================================================
     // 14. SEND WELCOME EMAIL
     // ==================================================

@@ -120,9 +120,29 @@ const deletePayment = async (req, res) => {
   }
 };
 
+// GET PAYMENT STATS
+const getPaymentStats = async (req, res) => {
+  try {
+    const stats = await paymentService.getPaymentStats();
+
+    res.status(200).json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.log("Get payment stats error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment stats",
+    });
+  }
+};
+
 module.exports = {
   getPayments,
   getPayment,
+  getPaymentStats,
   createPayment,
   updatePaymentStatus,
   deletePayment,

@@ -112,10 +112,60 @@ const deletePayment = async (id) => {
   });
 };
 
+const getPaymentStats = async () => {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [
+    totalPayments,
+    paidPayments,
+    revenueResult,
+    thisMonthResult,
+  ] = await Promise.all([
+    prisma.payment.count(),
+
+    prisma.payment.count({
+      where: {
+        paymentStatus: "PAID",
+      },
+    }),
+
+    prisma.payment.aggregate({
+      where: {
+        paymentStatus: "PAID",
+      },
+      _sum: {
+        totalAmount: true,
+      },
+    }),
+
+    prisma.payment.aggregate({
+      where: {
+        paymentStatus: "PAID",
+        paidAt: {
+          gte: startOfMonth,
+        },
+      },
+      _sum: {
+        totalAmount: true,
+      },
+    }),
+  ]);
+
+  return {
+    totalPayments,
+    paidPayments,
+    totalRevenue: revenueResult._sum.totalAmount || 0,
+    thisMonthPayment: thisMonthResult._sum.totalAmount || 0,
+  };
+};
+
 module.exports = {
   getPayments,
   getPaymentById,
   createPayment,
   updatePaymentStatus,
   deletePayment,
+  getPaymentStats,
 };
