@@ -1,4 +1,4 @@
-const { sendEmail } = require("./brevoService");
+const { sendEmail } = require("./emailService");
 
 const sendSuperAdminPasswordResetEmail = async ({
   adminName,

@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   ArrowUpCircle,
-  History
+  History,
+  MessageSquareQuote
 } from "lucide-react";
 
 
@@ -56,6 +57,12 @@ export const menuItems = [
     icon: Wallet,
     path: "/payments",
     roles: ["SUPER_ADMIN", "EMPLOYEE"]
+  },
+  {
+    name: "Testimonials",
+    icon: MessageSquareQuote,
+    path: "/testimonials",
+    roles: ["SUPER_ADMIN"]
   },
   {
     name: "Audit Logs",

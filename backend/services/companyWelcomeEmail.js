@@ -1,4 +1,4 @@
-const { sendEmail } = require("./brevoService"); // <-- adjust path if needed
+const { sendEmail } = require("./emailService"); // <-- adjust path if needed
 
 const sendCompanyWelcomeEmail = async ({
   companyName,

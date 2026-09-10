@@ -1,4 +1,4 @@
-const { sendEmail } = require("../services/brevoService");
+const { sendEmail } = require("../services/emailService");
 
 const createDemoRequest = async (req, res) => {
   try {

@@ -47,6 +47,7 @@ const authLimiter = rateLimit({
 
 const authRoutes = require("./routes/authRoutes");
 const companyRoutes = require("./routes/companyRoutes");
+const testimonialRoutes = require("./routes/testimonialRoutes");
 const subscriptionPlanRoutes = require("./routes/subscriptionPlanRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const subscriptionReminderRoutes = require("./routes/subscriptionReminderRoutes");
@@ -66,6 +67,7 @@ const demoRequestRoutes = require("./routes/demoRequestRoutes");
 
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/companies", companyRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/subscription-plans", subscriptionPlanRoutes);
 app.use("/api/public/plans", publicPlanRoutes);

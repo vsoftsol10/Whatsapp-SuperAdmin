@@ -4,7 +4,7 @@ const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendEmail } = require("./brevoService");
+const { sendEmail } = require("./emailService");
 const {
   sendSuperAdminPasswordResetEmail
 } = require("./passwordResetEmailService");

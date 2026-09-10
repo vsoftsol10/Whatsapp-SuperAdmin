@@ -1378,3 +1378,23 @@ model AiSettings {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Testimonial {
+  id           Int               @id @default(autoincrement())
+  customerName String
+  designation  String?
+  companyName  String?
+  content      String
+  rating       Int               @default(5)
+  status       TestimonialStatus @default(DRAFT)
+  displayOrder Int               @default(0)
+  isFeatured   Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+enum TestimonialStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+}

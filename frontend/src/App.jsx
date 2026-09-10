@@ -1,7 +1,7 @@
 
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
+import TestimonialsPage from "./pages/Testimonials";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CompaniesPage from "./pages/CompaniesPage";
@@ -78,6 +78,17 @@ export default function App() {
                 allowedRoles={["SUPER_ADMIN", "EMPLOYEE"]}
               >
                 <SubscriptionPlansPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/testimonials"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN", "EMPLOYEE"]}
+              >
+                <TestimonialsPage />
               </ProtectedRoute>
             }
           />

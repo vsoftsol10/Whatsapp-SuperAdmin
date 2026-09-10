@@ -1,8 +1,6 @@
 
-
-
 const prisma = require("../config/prisma");
-const { sendEmail } = require("../services/brevoService");
+const { sendEmail } = require("./emailService");
 
 const updateExpiredSubscriptions = async () => {
   try {
