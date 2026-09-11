@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const cron = require("node-cron");
 const { updateExpiredSubscriptions } = require("./services/subscriptionExpiryService");
 const { startSubscriptionExpiryJob } = require("./jobs/subscriptionExpiryJob");
+
 dotenv.config();
 console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
 
@@ -44,7 +45,7 @@ const authLimiter = rateLimit({
     message: "Too many attempts. Please try again later.",
   },
 });
-
+const emailVerificationRoutes = require("./routes/emailVerificationRoutes");
 const authRoutes = require("./routes/authRoutes");
 const companyRoutes = require("./routes/companyRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
@@ -78,6 +79,7 @@ app.use("/api/subscriptions", subscriptionReminderRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/email-verification", emailVerificationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/razorpay", razorpayRoutes);

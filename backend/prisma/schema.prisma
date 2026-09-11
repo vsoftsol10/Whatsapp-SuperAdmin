@@ -452,7 +452,7 @@ model Payment {
   razorpayOrderId   String? @unique
   razorpayPaymentId String? @unique
   razorpaySignature String?
-  
+
   paidAt DateTime?
 
   createdAt DateTime @default(now())
@@ -869,10 +869,17 @@ model Template {
 
   content String
 
+  headerType    HeaderType @default(NONE)
+  headerContent String?
+  footerContent String?
+
   status TemplateStatus @default(DRAFT)
 
   purpose  TemplatePurpose @default(CUSTOM)
   autoSend Boolean         @default(false)
+
+  metaTemplateId  String?
+  rejectionReason String?
 
   createdById String
 
@@ -890,6 +897,7 @@ model Template {
   @@index([companyId])
   @@index([whatsappAccountId])
   @@index([createdById])
+  @@index([metaTemplateId])
 }
 
 //////////////////////////////////////////////////////
@@ -1152,6 +1160,14 @@ enum TemplateCategory {
   SALES
   UTILITY
   AUTHENTICATION
+}
+
+enum HeaderType {
+  NONE
+  TEXT
+  IMAGE
+  VIDEO
+  DOCUMENT
 }
 
 enum TemplatePurpose {
