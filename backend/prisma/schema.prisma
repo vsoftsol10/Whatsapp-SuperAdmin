@@ -35,6 +35,7 @@ model Company {
   id          Int    @id @default(autoincrement())
   companyId   String @unique
   companyName String
+  logo        String?
   ownerName   String
 
   email   String @unique
@@ -69,6 +70,10 @@ model Company {
   employees                    Employee[]
   crmAuditLogs                 CrmAuditLog[]
   subscriptionUpgradeRequests  SubscriptionUpgradeRequest[]
+
+  integrations Integration[]
+  purchases Purchase[]
+
   backups Backup[]
 }
 
@@ -104,6 +109,32 @@ model WhatsAppAccount {
   whatsappAccessToken String?
 
   status WhatsAppStatus @default(NOT_CONNECTED)
+
+  // ============================================
+  // COEXISTENCE (WhatsApp Business App + Cloud API)
+  // ============================================
+  // true when this number was onboarded via the
+  // "Connect a WhatsApp Business App" path in Embedded
+  // Signup, instead of a brand-new Cloud API-only number.
+  isCoexistence Boolean @default(false)
+
+  // Mirrors Meta's is_on_biz_app / platform_type fields
+  // (GET /{phone_number_id}?fields=is_on_biz_app,platform_type)
+  isOnBizApp   Boolean @default(false)
+  platformType String?
+
+  // Progress of the one-time 24h post-onboarding sync.
+  // Values used: NOT_STARTED | REQUESTED | IN_PROGRESS | COMPLETED | DECLINED | FAILED
+  contactsSyncStatus String @default("NOT_STARTED")
+  historySyncStatus  String @default("NOT_STARTED")
+
+  contactsSyncRequestId String?
+  historySyncRequestId  String?
+
+  // Business must keep the WhatsApp Business App open until this
+  // deadline, or Meta requires a full re-onboarding (24h window
+  // from the moment Coexistence is connected).
+  syncDeadline DateTime?
 
   connectedAt    DateTime?
   disconnectedAt DateTime?
@@ -569,6 +600,7 @@ model Customer {
   templateRecipients  TemplateRecipient[]
   deals               Deal[]
   tickets             Ticket[]
+  purchases Purchase[]
 
   ///////////////////////////////////////
 
@@ -875,6 +907,11 @@ model Template {
   headerType    HeaderType @default(NONE)
   headerContent String?
   footerContent String?
+
+  // 👈 NEW: sample values for {{1}}, {{2}}, etc. in `content`.
+  // Stored as a JSON array in the same order as the variable numbers,
+  // e.g. ["Rahul", "ORD1234"] for {{1}} and {{2}}.
+  bodyExamples Json?
 
   status TemplateStatus @default(DRAFT)
 
@@ -1368,6 +1405,7 @@ enum CrmAuditModule {
   CAMPAIGN
   TEMPLATE
   USER
+  COMPANY
 
   @@map("CrmAuditModule")
 }
@@ -1527,4 +1565,121 @@ enum SuperAdminBackupStatus {
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+enum IntegrationType {
+  BILLING
+  ECOMMERCE
+  POS
+  ERP
+  PAYMENT
+  CUSTOM
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Integration {
+  id Int @id @default(autoincrement())
+  companyId Int
+  name String
+  provider String?
+  type IntegrationType
+
+  webhookKey String? @unique
+  webhookSecret String?
+
+  // ------------------------------------------
+  // AUTOMATION SETTINGS
+  // ------------------------------------------
+  // Controls what happens automatically when a
+  // webhook event is received. Shape:
+  // {
+  //   autoCreateCustomer: boolean,   // create a NEW customer if phone not found
+  //   autoCreatePurchase: boolean,   // record a Purchase row
+  //   allowedEventTypes: string[]    // [] = allow all event types
+  // }
+  // Always read through getIntegrationSettings()
+  // helper so missing/partial settings fall back
+  // to safe defaults.
+  // ------------------------------------------
+  settings Json?
+
+  status IntegrationStatus @default(ACTIVE)
+
+  lastEventAt DateTime?
+  lastSyncAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  events IntegrationEvent[]
+  purchases Purchase[]
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model IntegrationEvent {
+  id Int @id @default(autoincrement())
+
+  integrationId Int
+
+  eventId String
+  eventType String
+
+  payload Json
+
+  status String @default("RECEIVED")
+  errorMessage String?
+
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, eventId])
+  @@index([integrationId])
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Purchase {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+  customerId String
+
+  integrationId Int?
+
+  externalOrderId String?
+  invoiceNumber String?
+
+  amount Float
+  currency String @default("INR")
+
+  status String
+
+  purchaseDate DateTime
+
+  source String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(  fields: [companyId], references: [id], onDelete: Cascade )
+
+  customer Customer @relation( fields: [customerId], references: [id], onDelete: Cascade )
+
+  integration Integration? @relation( fields: [integrationId], references: [id],  onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([integrationId])
+  @@index([externalOrderId])
+  @@index([purchaseDate])
 }
