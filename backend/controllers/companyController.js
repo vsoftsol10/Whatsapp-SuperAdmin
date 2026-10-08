@@ -1,3 +1,900 @@
+// const prisma = require("../config/prisma");
+// const bcrypt = require("bcryptjs");
+// const sendCompanyWelcomeEmail = require("../services/companyWelcomeEmail");
+// const { createAuditLog } = require("../services/auditLogService");
+
+// console.log("******** COMPANY CONTROLLER LOADED ********");
+
+// const generatePassword = () => {
+//   const chars =
+//     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
+
+//   let password = "";
+
+//   for (let i = 0; i < 10; i++) {
+//     password += chars.charAt(
+//       Math.floor(Math.random() * chars.length)
+//     );
+//   }
+
+//   return password;
+// };
+
+// const createCompany = async (req, res) => {
+//   try {
+//     const {
+//       companyName,
+//       ownerName,
+//       email,
+//       phone,
+//       address,
+//       plan,
+//       status
+//     } = req.body;
+
+//     if (!companyName || !ownerName || !email || !phone || !address || !plan) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "All company fields are required"
+//       });
+//     }
+
+//     const normalizedEmail = email.trim().toLowerCase();
+
+//     const existingUser = await prisma.user.findFirst({
+//       where: {
+//         email: normalizedEmail
+//       }
+//     });
+
+//     const existingCompany = await prisma.company.findFirst({
+//       where: {
+//         email: normalizedEmail
+//       }
+//     });
+
+//     if (existingUser || existingCompany) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "This email ID is already registered"
+//       });
+//     }
+
+//     const subscriptionPlan = await prisma.subscriptionPlan.findUnique({
+//       where: {
+//         planName: plan
+//       }
+//     });
+
+//     console.log("Subscription Plan:", subscriptionPlan);
+
+//     if (!subscriptionPlan) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Subscription plan "${plan}" not found`
+//       });
+//     }
+
+//     const startDate = new Date();
+
+//     const expiryDate = new Date(startDate);
+
+//     expiryDate.setDate(
+//       expiryDate.getDate() + subscriptionPlan.durationDays
+//     );
+
+//     const tempPassword = generatePassword(10);
+
+//     const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+//     // companyId (e.g. COM-004) is derived from the last row's id, which is
+//     // technically a race condition under concurrent requests. We retry on a
+//     // unique constraint violation (Prisma error P2002) so two simultaneous
+//     // signups can never silently overwrite/collide on the same companyId.
+//     let company;
+//     let attempts = 0;
+//     const maxAttempts = 5;
+
+//     while (!company) {
+//       attempts++;
+
+//       const lastCompany = await prisma.company.findFirst({
+//         orderBy: {
+//           id: "desc"
+//         }
+//       });
+
+//       const nextNumber = lastCompany ? lastCompany.id + 1 : 1;
+//       const generatedCompanyId = `COM-${String(nextNumber).padStart(3, "0")}`;
+
+//       try {
+//         company = await prisma.company.create({
+//           data: {
+//             companyId: generatedCompanyId,
+//             companyName,
+//             ownerName,
+//             email: normalizedEmail,
+//             phone,
+//             address,
+//             plan,
+//             status: status || "ACTIVE",
+//             expiryDate
+//           }
+//         });
+//       } catch (err) {
+//         const isDuplicateCompanyId =
+//           err.code === "P2002" && err.meta?.target?.includes("companyId");
+
+//         if (isDuplicateCompanyId && attempts < maxAttempts) {
+//           continue; // another request grabbed this id first, try the next one
+//         }
+
+//         throw err;
+//       }
+//     }
+
+//     // =====================================
+//     // COMPANY CREATION AUDIT
+//     // =====================================
+
+//     await createAuditLog({
+//       actorId: req.user?.id || null,
+//       actorType: req.user?.role || "UNKNOWN",
+//       action: "COMPANY_CREATED",
+//       entityType: "COMPANY",
+//       entityId: company.id,
+//       description: `Company "${company.companyName}" was created successfully`,
+//       ipAddress: req.ip,
+//       userAgent: req.get("user-agent"),
+//     });
+
+//     // Create Subscription
+//     const subscription = await prisma.subscription.create({
+//       data: {
+//         companyId: company.id,
+//         planId: subscriptionPlan.id,
+//         startDate,
+//         expiryDate,
+//         status: status || "ACTIVE"
+//       }
+//     });
+
+
+//     const adminUser = await prisma.user.create({
+//       data: {
+//         companyId: company.id,
+//         name: ownerName,
+//         email: normalizedEmail,
+//         password: hashedPassword,
+//         role: "ADMIN",
+//         isFirstLogin: true
+//       }
+//     });
+
+//     try {
+//       await sendCompanyWelcomeEmail({
+//         companyName,
+//         ownerName,
+//         email: normalizedEmail,
+//         password: tempPassword,
+//       });
+//     } catch (error) {
+//       console.error("Failed to send company welcome email:", error.message);
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Company created successfully",
+//       company,
+//       subscription,
+//       adminUser
+//     });
+
+//   } catch (error) {
+//     console.log("Create company error:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Company creation failed",
+//       error: error.message
+//     });
+//   }
+// };
+
+
+
+// const getCompanies = async (req, res) => {
+//   try {
+
+//     const companies = await prisma.company.findMany({
+
+//       include: {
+
+//         subscriptions: {
+
+//           orderBy: {
+//             createdAt: "desc"
+//           },
+
+//           take: 1,
+
+//           include: {
+//             plan: true
+//           }
+
+//         }
+
+//       },
+
+//       orderBy: {
+//         createdAt: "desc"
+//       }
+
+//     });
+
+//     const formattedCompanies = companies.map((company) => {
+
+//       const subscription = company.subscriptions[0] || null;
+
+//       return {
+
+//         id: company.id,
+//         companyId: company.companyId,
+//         companyName: company.companyName,
+//         ownerName: company.ownerName,
+//         email: company.email,
+//         phone: company.phone,
+//         address: company.address,
+
+//         plan: company.plan,
+//         status: company.status,
+
+//         expiryDate: company.expiryDate,
+
+//         subscription
+
+//       };
+
+//     });
+
+//     res.status(200).json({
+
+//       success: true,
+
+//       count: formattedCompanies.length,
+
+//       companies: formattedCompanies
+
+//     });
+
+//   } catch (error) {
+
+//     console.log(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch companies"
+//     });
+
+//   }
+// };
+// const getCompanyById = async (req, res) => {
+//   try {
+//     const { companyId } = req.params;
+
+//     const company = await prisma.company.findUnique({
+//       where: {
+//         companyId
+//       },
+
+//       include: {
+//         subscriptions: {
+//           orderBy: {
+//             createdAt: "desc"
+//           },
+
+//           include: {
+//             plan: true
+//           }
+//         }
+//       }
+//     });
+
+//     if (!company) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company not found"
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+
+//       company: {
+//         id: company.id,
+//         companyId: company.companyId,
+//         companyName: company.companyName,
+//         ownerName: company.ownerName,
+//         email: company.email,
+//         phone: company.phone,
+//         address: company.address,
+
+//         plan: company.plan,
+//         status: company.status,
+
+//         expiryDate: company.expiryDate,
+
+//         // ALL subscription history
+//         subscriptions: company.subscriptions
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error("Get Company By ID Error:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch company",
+//       error: error.message
+//     });
+//   }
+// };
+
+// const updateCompany = async (req, res) => {
+//   try {
+//     console.log("PARAMS:", req.params);
+//     console.log("BODY:", req.body);
+
+//     const { companyId } = req.params;
+
+//     const {
+//       companyName,
+//       ownerName,
+//       email,
+//       phone,
+//       address,
+//       plan,
+//       status,
+//     } = req.body;
+
+//     // --------------------------------------------------
+//     // 1. Find company
+//     // --------------------------------------------------
+
+//     const existingCompany = await prisma.company.findUnique({
+//       where: {
+//         companyId,
+//       },
+//     });
+
+//     if (!existingCompany) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company not found",
+//       });
+//     }
+
+//     // --------------------------------------------------
+//     // 2. Find selected plan
+//     // --------------------------------------------------
+
+//     const subscriptionPlan = await prisma.subscriptionPlan.findUnique({
+//       where: {
+//         planName: plan,
+//       },
+//     });
+
+//     if (!subscriptionPlan) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Subscription plan "${plan}" not found`,
+//       });
+//     }
+
+//     // --------------------------------------------------
+//     // 3. Check whether PLAN actually changed
+//     // --------------------------------------------------
+
+//     const planChanged = existingCompany.plan !== plan;
+
+//     console.log("=================================");
+//     console.log("OLD PLAN:", existingCompany.plan);
+//     console.log("NEW PLAN:", plan);
+//     console.log("PLAN CHANGED:", planChanged);
+//     console.log("=================================");
+
+//     // --------------------------------------------------
+//     // 4. Update company basic information
+//     // --------------------------------------------------
+
+//     let expiryDate = existingCompany.expiryDate;
+
+//     // Only calculate a new expiry date when plan changes
+//     if (planChanged) {
+//       const startDate = new Date();
+
+//       expiryDate = new Date(startDate);
+
+//       expiryDate.setDate(
+//         expiryDate.getDate() + subscriptionPlan.durationDays
+//       );
+//     }
+
+//     const company = await prisma.company.update({
+//       where: {
+//         companyId,
+//       },
+
+//       data: {
+//         companyName,
+//         ownerName,
+//         email,
+//         phone,
+//         address,
+//         plan,
+//         status,
+//         expiryDate,
+//       },
+//     });
+
+//     console.log("Company Updated:", company);
+
+//     // =====================================
+//     // COMPANY UPDATE AUDIT
+//     // =====================================
+
+//     await createAuditLog({
+//       actorId: req.user.id,
+//       actorType: req.user.role,
+//       action: "COMPANY_UPDATED",
+//       entityType: "COMPANY",
+//       entityId: company.id,
+//       companyId: company.id,
+//       description: `Company "${company.companyName}" was updated`,
+//       oldValue: {
+//         companyName: existingCompany.companyName,
+//         ownerName: existingCompany.ownerName,
+//         email: existingCompany.email,
+//         phone: existingCompany.phone,
+//         address: existingCompany.address,
+//         plan: existingCompany.plan,
+//         status: existingCompany.status,
+//         expiryDate: existingCompany.expiryDate,
+//       },
+//       newValue: {
+//         companyName: company.companyName,
+//         ownerName: company.ownerName,
+//         email: company.email,
+//         phone: company.phone,
+//         address: company.address,
+//         plan: company.plan,
+//         status: company.status,
+//         expiryDate: company.expiryDate,
+//       },
+//       ipAddress: req.ip,
+//       userAgent: req.get("user-agent"),
+//     });
+
+//     // --------------------------------------------------
+//     // 5. Update company admin information
+//     // --------------------------------------------------
+
+//     await prisma.user.updateMany({
+//       where: {
+//         companyId: company.id,
+//         role: "ADMIN",
+//       },
+
+//       data: {
+//         name: ownerName,
+//         email,
+//       },
+//     });
+
+//     // --------------------------------------------------
+//     // 6. Get current active subscription
+//     // --------------------------------------------------
+
+//     const currentSubscription = await prisma.subscription.findFirst({
+//       where: {
+//         companyId: company.id,
+//         status: "ACTIVE",
+//       },
+
+//       orderBy: {
+//         createdAt: "desc",
+//       },
+//     });
+
+//     // --------------------------------------------------
+//     // 7. IMPORTANT:
+//     // Only create a NEW subscription when PLAN changes
+//     // --------------------------------------------------
+
+//     if (planChanged) {
+//       console.log("========== PLAN CHANGE ==========");
+//       console.log(
+//         `Changing plan from ${existingCompany.plan} to ${plan}`
+//       );
+
+//       // ----------------------------------------------
+//       // Count users BEFORE starting new plan
+//       // ----------------------------------------------
+
+//       const currentUserCount = await prisma.user.count({
+//         where: {
+//           companyId: company.id,
+//           status: "ACTIVE",
+//         },
+//       });
+
+//       console.log(
+//         "Users before new plan starts:",
+//         currentUserCount
+//       );
+
+//       // ----------------------------------------------
+//       // Expire old subscription
+//       // ----------------------------------------------
+
+//       if (currentSubscription) {
+//         await prisma.subscription.update({
+//           where: {
+//             id: currentSubscription.id,
+//           },
+
+//           data: {
+//             status: "EXPIRED",
+//           },
+//         });
+
+//         console.log(
+//           "Old subscription expired:",
+//           currentSubscription.id
+//         );
+//       }
+
+//       // ----------------------------------------------
+//       // Create new subscription
+//       // ----------------------------------------------
+
+//       const startDate = new Date();
+
+//       const newSubscription = await prisma.subscription.create({
+//         data: {
+//           companyId: company.id,
+//           planId: subscriptionPlan.id,
+//           startDate,
+//           expiryDate,
+
+//           // IMPORTANT:
+//           // Existing users belong to the previous plan.
+//           // New plan starts counting NEW users from now.
+//           usersAtSubscriptionStart: currentUserCount,
+
+//           status: "ACTIVE",
+//           paymentStatus: "PENDING",
+//         },
+
+//         include: {
+//           plan: true,
+//         },
+//       });
+
+//       console.log("========== NEW SUBSCRIPTION ==========");
+//       console.log("Plan:", newSubscription.plan.planName);
+//       console.log(
+//         "Max Users:",
+//         newSubscription.plan.maxUsers
+//       );
+//       console.log(
+//         "Users At Subscription Start:",
+//         newSubscription.usersAtSubscriptionStart
+//       );
+//       console.log("======================================");
+
+//       return res.status(200).json({
+//         success: true,
+//         message: `Company plan changed from ${existingCompany.plan} to ${plan}`,
+//         company,
+//         subscription: newSubscription,
+//       });
+//     }
+
+//     // --------------------------------------------------
+//     // 8. If PLAN DID NOT CHANGE
+//     // Don't create a new subscription
+//     // --------------------------------------------------
+
+//     console.log(
+//       "Plan did not change. Existing subscription preserved."
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Company updated successfully",
+//       company,
+//       subscription: currentSubscription,
+//     });
+
+//   } catch (error) {
+//     console.error("Update Company Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to update company",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// const changeCompanyStatus = async (req, res) => {
+//   try {
+
+//     const { companyId } = req.params;
+//     const { status } = req.body;
+
+//     const allowedStatus = [
+//       "ACTIVE",
+//       "INACTIVE",
+//       "EXPIRED"
+//     ];
+
+//     if (!allowedStatus.includes(status)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid company status"
+//       });
+//     }
+
+//     // =====================================
+//     // 1. FIND EXISTING COMPANY
+//     // =====================================
+
+//     const existingCompany = await prisma.company.findUnique({
+//       where: {
+//         companyId
+//       }
+//     });
+
+//     if (!existingCompany) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company not found"
+//       });
+//     }
+
+//     // =====================================
+//     // 2. CHECK IF STATUS IS ALREADY SAME
+//     // =====================================
+
+//     if (existingCompany.status === status) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Company is already ${status}`
+//       });
+//     }
+
+//     // =====================================
+//     // 3. UPDATE COMPANY STATUS
+//     // =====================================
+
+//     const company = await prisma.company.update({
+//       where: {
+//         companyId
+//       },
+
+//       data: {
+//         status
+//       }
+//     });
+
+//     // =====================================
+//     // 4. COMPANY STATUS CHANGE AUDIT
+//     // =====================================
+
+//     await createAuditLog({
+//       actorId: req.user.id,
+//       actorType: req.user.role,
+//       action: "COMPANY_STATUS_CHANGED",
+//       entityType: "COMPANY",
+//       entityId: company.id,
+//       companyId: company.id,
+//       description: `Company "${company.companyName}" status changed from ${existingCompany.status} to ${company.status}`,
+//       oldValue: {
+//         status: existingCompany.status
+//       },
+//       newValue: {
+//         status: company.status
+//       },
+//       ipAddress: req.ip,
+//       userAgent: req.get("user-agent")
+//     });
+
+//     // =====================================
+//     // 5. UPDATE SUBSCRIPTION STATUS
+//     // =====================================
+
+//     let subscriptionStatus = "ACTIVE";
+
+//     if (status === "EXPIRED") {
+//       subscriptionStatus = "EXPIRED";
+//     }
+
+//     if (status === "CANCELLED") {
+//       subscriptionStatus = "CANCELLED";
+//     }
+
+//     if (status === "INACTIVE") {
+//       subscriptionStatus = "CANCELLED";
+//     }
+
+//     await prisma.subscription.updateMany({
+//       where: {
+//         companyId: company.id
+//       },
+
+//       data: {
+//         status: subscriptionStatus
+//       }
+//     });
+
+//     // =====================================
+//     // 6. RESPONSE
+//     // =====================================
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Company status updated successfully",
+//       company
+//     });
+
+//   } catch (error) {
+
+//     console.log(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update company status"
+//     });
+
+//   }
+// };
+
+// const deleteCompany = async (req, res) => {
+//   try {
+//     const { companyId } = req.params;
+
+//     const company = await prisma.company.findUnique({
+//       where: {
+//         companyId
+//       }
+//     });
+
+//     if (!company) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company not found"
+//       });
+//     }
+
+//     await prisma.subscription.deleteMany({
+//       where: {
+//         companyId: company.id
+//       }
+//     });
+
+//     await prisma.company.delete({
+//       where: {
+//         companyId
+//       }
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Company deleted successfully"
+//     });
+
+//   } catch (error) {
+//     console.log(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to delete company"
+//     });
+//   }
+// };
+
+// const getCompanyStats = async (req, res) => {
+//   try {
+//     console.log("========== COMPANY STATS ==========");
+
+//     const totalCompanies = await prisma.company.count();
+
+//     const activeCompanies = await prisma.company.count({
+//       where: {
+//         status: "ACTIVE",
+//       },
+//     });
+
+//     const inactiveCompanies = await prisma.company.count({
+//       where: {
+//         status: "INACTIVE",
+//       },
+//     });
+
+//     const expiredCompanies = await prisma.company.count({
+//       where: {
+//         status: "EXPIRED",
+//       },
+//     });
+
+//     const starterCompanies = await prisma.company.count({
+//       where: {
+//         plan: "Starter",
+//       },
+//     });
+
+//     const professionalCompanies = await prisma.company.count({
+//       where: {
+//         plan: "Professional",
+//       },
+//     });
+
+//     const enterpriseCompanies = await prisma.company.count({
+//       where: {
+//         plan: "Enterprise",
+//       },
+//     });
+
+//     const trialPlanCompanies = await prisma.company.count({
+//       where: {
+//         plan: "Trial",
+//       },
+//     });
+
+//     const stats = {
+//       totalCompanies,
+//       activeCompanies,
+//       inactiveCompanies,
+//       expiredCompanies,
+//       trialCompanies: trialPlanCompanies,
+//       starterCompanies,
+//       professionalCompanies,
+//       enterpriseCompanies,
+//     };
+
+//     console.log("COMPANY STATS:", stats);
+
+//     return res.status(200).json({
+//       success: true,
+//       stats,
+//     });
+
+//   } catch (error) {
+//     console.error("========== COMPANY STATS ERROR ==========");
+//     console.error(error);
+//     console.error(error.message);
+//     console.error(error.stack);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch company statistics",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// module.exports = {
+//   createCompany,
+//   getCompanies,
+//   getCompanyById,
+//   updateCompany,
+//   changeCompanyStatus,
+//   deleteCompany,
+//   getCompanyStats
+// };
+
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
 const sendCompanyWelcomeEmail = require("../services/companyWelcomeEmail");
@@ -420,6 +1317,40 @@ const updateCompany = async (req, res) => {
       );
     }
 
+    // --------------------------------------------------
+    // FIX: Keep company status in sync with subscription
+    // --------------------------------------------------
+    // The edit form sends back the OLD status (EXPIRED) when only the
+    // plan is changed. A plan change creates a brand new ACTIVE
+    // subscription, so the company must not stay EXPIRED.
+    // Likewise, if an admin switches an expired company to ACTIVE
+    // without changing the plan, the subscription has to be renewed.
+    // An explicit INACTIVE choice is always respected.
+    // --------------------------------------------------
+
+    let finalStatus = status;
+    let reactivated = false;
+
+    const requestedStatus = status || existingCompany.status;
+
+    if (planChanged) {
+      if (requestedStatus === "EXPIRED") {
+        finalStatus = "ACTIVE";
+      }
+    } else if (
+      existingCompany.status === "EXPIRED" &&
+      status === "ACTIVE" &&
+      new Date(existingCompany.expiryDate) <= new Date()
+    ) {
+      reactivated = true;
+
+      expiryDate = new Date();
+
+      expiryDate.setDate(
+        expiryDate.getDate() + subscriptionPlan.durationDays
+      );
+    }
+
     const company = await prisma.company.update({
       where: {
         companyId,
@@ -432,7 +1363,7 @@ const updateCompany = async (req, res) => {
         phone,
         address,
         plan,
-        status,
+        status: finalStatus,
         expiryDate,
       },
     });
@@ -602,6 +1533,66 @@ const updateCompany = async (req, res) => {
     }
 
     // --------------------------------------------------
+    // 7.1 EXPIRED -> ACTIVE without a plan change
+    // Renew the latest subscription so the company stays ACTIVE
+    // (otherwise the expiry job would expire it again).
+    // --------------------------------------------------
+
+    if (reactivated) {
+      const latestSubscription = await prisma.subscription.findFirst({
+        where: {
+          companyId: company.id,
+        },
+
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      let renewedSubscription;
+
+      if (latestSubscription) {
+        renewedSubscription = await prisma.subscription.update({
+          where: {
+            id: latestSubscription.id,
+          },
+
+          data: {
+            planId: subscriptionPlan.id,
+            status: "ACTIVE",
+            expiryDate,
+          },
+        });
+      } else {
+        const currentUserCount = await prisma.user.count({
+          where: {
+            companyId: company.id,
+            status: "ACTIVE",
+          },
+        });
+
+        renewedSubscription = await prisma.subscription.create({
+          data: {
+            companyId: company.id,
+            planId: subscriptionPlan.id,
+            startDate: new Date(),
+            expiryDate,
+            usersAtSubscriptionStart: currentUserCount,
+            status: "ACTIVE",
+            paymentStatus: "PENDING",
+          },
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Company reactivated successfully",
+        company,
+        subscription: renewedSubscription,
+      });
+    }
+
+    // --------------------------------------------------
     // 8. If PLAN DID NOT CHANGE
     // Don't create a new subscription
     // --------------------------------------------------
@@ -679,14 +1670,38 @@ const changeCompanyStatus = async (req, res) => {
     // 3. UPDATE COMPANY STATUS
     // =====================================
 
+    // FIX: When re-activating a company whose expiry date has already
+    // passed, renew the expiry date from today (based on its current
+    // plan). Otherwise the expiry job would set it back to EXPIRED.
+    const companyUpdateData = { status };
+
+    let renewedExpiryDate = null;
+
+    if (
+      status === "ACTIVE" &&
+      new Date(existingCompany.expiryDate) <= new Date()
+    ) {
+      const currentPlan = await prisma.subscriptionPlan.findUnique({
+        where: {
+          planName: existingCompany.plan
+        }
+      });
+
+      renewedExpiryDate = new Date();
+
+      renewedExpiryDate.setDate(
+        renewedExpiryDate.getDate() + (currentPlan?.durationDays || 30)
+      );
+
+      companyUpdateData.expiryDate = renewedExpiryDate;
+    }
+
     const company = await prisma.company.update({
       where: {
         companyId
       },
 
-      data: {
-        status
-      }
+      data: companyUpdateData
     });
 
     // =====================================
@@ -729,15 +1744,45 @@ const changeCompanyStatus = async (req, res) => {
       subscriptionStatus = "CANCELLED";
     }
 
-    await prisma.subscription.updateMany({
-      where: {
-        companyId: company.id
-      },
+    if (status === "ACTIVE") {
+      // FIX: Only the LATEST subscription is made ACTIVE again.
+      // Older (already ended) subscriptions must stay as they are,
+      // otherwise the expiry job re-expires the company.
+      const latestSubscription = await prisma.subscription.findFirst({
+        where: {
+          companyId: company.id
+        },
 
-      data: {
-        status: subscriptionStatus
+        orderBy: {
+          createdAt: "desc"
+        }
+      });
+
+      if (latestSubscription) {
+        await prisma.subscription.update({
+          where: {
+            id: latestSubscription.id
+          },
+
+          data: {
+            status: "ACTIVE",
+            ...(renewedExpiryDate && {
+              expiryDate: renewedExpiryDate
+            })
+          }
+        });
       }
-    });
+    } else {
+      await prisma.subscription.updateMany({
+        where: {
+          companyId: company.id
+        },
+
+        data: {
+          status: subscriptionStatus
+        }
+      });
+    }
 
     // =====================================
     // 6. RESPONSE
