@@ -232,6 +232,7 @@ app.use(helmet());
 // Restrict CORS to known frontend origin(s).
 const allowedOrigins = [
   "https://vatupcrm.in",
+  "https://admin.vatupcrm.in",
   "https://watupcrmsite.thevsoft.com",
   "http://localhost:5173",
   "http://localhost:5174",
