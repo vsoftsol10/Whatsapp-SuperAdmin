@@ -52,6 +52,10 @@ model Company {
   // WhatsApp Business connection
   whatsappAccounts WhatsAppAccount[]
 
+  // Facebook Pages connected for Messenger
+  facebookPages FacebookPage[]
+  aiUsageLogs AiUsageLog[]
+
   // SaaS
   subscriptions   Subscription[]
   supportTickets  SupportTicket[]
@@ -60,6 +64,7 @@ model Company {
   // CRM
   users                        User[]
   customers                    Customer[]
+  services                     Service[]
   conversations                Conversation[]
   campaigns                    Campaign[]
   templates                    Template[]
@@ -75,6 +80,9 @@ model Company {
   purchases Purchase[]
 
   backups Backup[]
+
+  // AI auto-reply configuration (one row per company)
+  aiSettings AiSettings?
 }
 
 enum CompanyStatus {
@@ -602,11 +610,53 @@ model Customer {
   tickets             Ticket[]
   purchases Purchase[]
 
+  // Services this customer uses (optional, many-to-many)
+  customerServices CustomerService[]
+
   ///////////////////////////////////////
 
   @@unique([companyId, phone])
   @@index([companyId])
   @@index([userId])
+}
+
+//////////////////////////////////////////////////////
+// SERVICE (per company) + CUSTOMER <-> SERVICE
+//////////////////////////////////////////////////////
+
+// A service/product line that a company offers (e.g. "Yoga", "Web Design").
+// Used to tag customers so campaigns can target one service's customers.
+model Service {
+  id String @id @default(uuid())
+
+  companyId Int
+
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customers CustomerService[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+// Join table: one customer can use many services, one service has many customers.
+model CustomerService {
+  customerId String
+  serviceId  String
+
+  createdAt DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, serviceId])
+  @@index([serviceId])
 }
 
 //////////////////////////////////////////////////////
@@ -623,6 +673,12 @@ model Conversation {
   whatsappAccountId Int?
 
   phone String?
+
+  // FACEBOOK MESSENGER (all null for WhatsApp conversations)
+  // channel = "MESSENGER" for these conversations.
+  facebookPageId Int?
+  externalUserId String? // the person's Page-Scoped ID (PSID)
+  contactName    String? // name shown when there is no linked customer
 
   status  String @default("OPEN")
   channel String @default("WHATSAPP")
@@ -645,13 +701,17 @@ model Conversation {
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer?        @relation(fields: [customerId], references: [id])
   whatsappAccount WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
+  facebookPage    FacebookPage?    @relation(fields: [facebookPageId], references: [id], onDelete: SetNull)
 
   messages Message[]
 
   ///////////////////////////////////////
 
   @@index([companyId])
+  @@index([companyId, updatedAt]) // chat list: filter by company, newest first
   @@index([whatsappAccountId])
+  @@index([facebookPageId])
+  @@unique([facebookPageId, externalUserId])
 }
 
 //////////////////////////////////////////////////////
@@ -671,6 +731,11 @@ model Message {
 
   imageUrl String?
 
+  // 👈 NEW: the template's buttons (call / website / quick reply / copy code),
+  // saved with a template message so the chat can show them. Null for
+  // normal messages.
+  buttons Json?
+
   metaMessageId String? @unique
 
   failureReason String?
@@ -684,6 +749,7 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
+  @@index([conversationId, createdAt]) // open chat: messages in time order
 }
 
 //////////////////////////////////////////////////////
@@ -734,6 +800,10 @@ model Lead {
 
   assignedToId String?
 
+  // Facebook / Instagram leads created by the AI (both optional)
+  channel        String? // "MESSENGER" or "INSTAGRAM"
+  conversationId String? // the chat this lead came from
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -746,6 +816,7 @@ model Lead {
 
   @@index([companyId])
   @@index([assignedToId])
+  @@index([companyId, conversationId])
 }
 
 //////////////////////////////////////////////////////
@@ -912,6 +983,11 @@ model Template {
   // Stored as a JSON array in the same order as the variable numbers,
   // e.g. ["Rahul", "ORD1234"] for {{1}} and {{2}}.
   bodyExamples Json?
+
+  // 👈 NEW: buttons shown under the message (call / website / quick reply /
+  // copy code). Stored as a JSON array, e.g.
+  // [{ "type": "URL", "text": "Pay Now", "url": "https://..." }]
+  buttons Json?
 
   status TemplateStatus @default(DRAFT)
 
@@ -1411,26 +1487,55 @@ enum CrmAuditModule {
 }
 
 //////////////////////////////////////////////////////
-// AI SETTINGS (Grok Auto-Reply)
+// AI SETTINGS (Multi-provider AI Auto-Reply)
 //////////////////////////////////////////////////////
 
-// Single global row (not per-company) — one Grok key/config shared
-// across all companies. Master isEnabled switch plus each
-// Conversation's own botEnabled controls whether a given chat
-// actually gets auto-replied.
+// One row PER COMPANY. Each company brings its own AI provider and
+// API key (Gemini, Grok, OpenAI, Claude, DeepSeek, Groq, Mistral or
+// any OpenAI-compatible endpoint).
+//
+//  - isEnabled     : company-wide master switch. Each Conversation's
+//                    own botEnabled still decides per chat.
+//  - provider      : the ACTIVE provider id (GEMINI, GROK, OPENAI,
+//                    ANTHROPIC, DEEPSEEK, GROQ, MISTRAL, CUSTOM)
+//  - providerKeys  : { "GEMINI": "enc:v1:...", "OPENAI": "enc:v1:..." }
+//                    API keys are stored ENCRYPTED (AES-256-GCM), one
+//                    per provider, so switching providers never needs
+//                    the key to be pasted again.
+//  - baseUrl       : only used by the CUSTOM provider
+//  - apiKey        : DEPRECATED legacy column from the old global
+//                    Grok-only setup. No longer read or written.
 model AiSettings {
   id Int @id @default(autoincrement())
 
+  companyId Int?     @unique
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
   isEnabled Boolean @default(false)
 
-  provider String @default("GROK")
-  apiKey   String?
-  model    String @default("grok-4")
+  provider     String @default("GEMINI")
+  model        String @default("gemini-2.5-flash")
+  providerKeys Json?
+  baseUrl      String?
+
+  apiKey String?
 
   systemPrompt String @default("You are a helpful, friendly customer support assistant for this business. Keep replies short, clear, and polite. If you don't know the answer or the customer wants a human, say you'll connect them to the team.")
 
+  // Structured business details the AI prompt is built from:
+  // { businessName, description, workingHours, location, contact,
+  //   languages, policies, tone }. The text above stays as extra instructions.
+  businessProfile Json?
+
   // How many previous messages (both sides) to send as context
   historyLimit Int @default(10)
+
+  leadCaptureEnabled Boolean @default(false)
+  leadAssigneeId     String?
+
+  // Last failure of the auto-reply pipeline, shown on the settings page
+  lastError   String?
+  lastErrorAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1682,4 +1787,75 @@ model Purchase {
   @@index([integrationId])
   @@index([externalOrderId])
   @@index([purchaseDate])
+}
+
+//////////////////////////////////////////////////////
+// FACEBOOK PAGE (Messenger)
+//////////////////////////////////////////////////////
+
+model FacebookPage {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+
+  // Facebook's own Page ID. Meta webhooks tell us which Page a message
+  // belongs to, so this is how we find the company.
+  pageId   String  @unique
+  pageName String?
+
+  // Instagram professional account linked to this Page (null if none).
+  // Instagram webhooks identify the account by this ID.
+  instagramAccountId String? @unique
+  instagramUsername  String?
+
+  // FACEBOOK_LOGIN  = connected through Facebook (Page, plus linked Instagram)
+  // INSTAGRAM_LOGIN = Instagram connected directly, no Facebook needed.
+  //                   (pageId is then "ig_<instagram id>" and
+  //                    pageAccessToken holds the Instagram token)
+  connectionType String @default("FACEBOOK_LOGIN")
+
+  // INSTAGRAM_LOGIN only: when the 60-day Instagram token expires
+  tokenExpiresAt DateTime?
+
+  // Page access token, stored ENCRYPTED (see utils/secretCrypto.js).
+  // null once the Page is disconnected.
+  pageAccessToken String?
+
+  // CONNECTED | RECONNECT_NEEDED | DISCONNECTED
+  status String @default("CONNECTED")
+
+  connectedByUserId String?
+
+  connectedAt    DateTime  @default(now())
+  disconnectedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([companyId])
+  @@index([status])
+}
+model AiUsageLog {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type    String
+  channel String @default("WhatsApp")
+
+  provider String @default("")
+  model    String @default("")
+
+  inputTokens  Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens  Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([createdAt])
 }

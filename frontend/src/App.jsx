@@ -1,6 +1,5 @@
-
-
 // import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 // import TestimonialsPage from "./pages/Testimonials";
 // import LoginPage from "./pages/LoginPage";
 // import DashboardPage from "./pages/DashboardPage";
@@ -10,34 +9,45 @@
 // import EmployeesPage from "./pages/EmployeesPage";
 // import SupportTicketsPage from "./pages/SupportTicketsPage";
 // import ProfilePage from "./pages/ProfilePage";
-// import AdminLayout from "./components/layout/AdminLayout";
-// import ProtectedRoute from "./routes/ProtectedRoute";
 // import PaymentsPage from "./pages/PaymentsPage";
 // import UpgradeRequests from "./pages/UpgradeRequests";
 // import ResetPassword from "./components/auth/ResetPassword";
 // import AuditLogsPage from "./pages/AuditLogsPage";
+// import BackupsPage from "./pages/Backups";
+
+// import AdminLayout from "./components/layout/AdminLayout";
+// import ProtectedRoute from "./routes/ProtectedRoute";
 
 // export default function App() {
 //   return (
 //     <BrowserRouter>
-
 //       <Routes>
 
-//         {/* Login */}
+//         {/* ==========================================
+//             LOGIN
+//         ========================================== */}
+
 //         <Route
 //           path="/"
 //           element={<LoginPage />}
 //         />
 
-//         {/* Password Reset */}
+//         {/* ==========================================
+//             PASSWORD RESET
+//         ========================================== */}
+
 //         <Route
 //           path="/reset-password"
 //           element={<ResetPassword />}
 //         />
 
-//         {/* Admin Layout */}
+//         {/* ==========================================
+//             ADMIN LAYOUT
+//         ========================================== */}
+
 //         <Route element={<AdminLayout />}>
 
+//           {/* Dashboard */}
 //           <Route
 //             path="/dashboard"
 //             element={
@@ -49,6 +59,7 @@
 //             }
 //           />
 
+//           {/* Companies */}
 //           <Route
 //             path="/companies"
 //             element={
@@ -60,6 +71,7 @@
 //             }
 //           />
 
+//           {/* Subscriptions */}
 //           <Route
 //             path="/subscriptions"
 //             element={
@@ -71,6 +83,7 @@
 //             }
 //           />
 
+//           {/* Subscription Plans */}
 //           <Route
 //             path="/subscription-plans"
 //             element={
@@ -82,6 +95,7 @@
 //             }
 //           />
 
+//           {/* Testimonials */}
 //           <Route
 //             path="/testimonials"
 //             element={
@@ -93,6 +107,7 @@
 //             }
 //           />
 
+//           {/* Payments */}
 //           <Route
 //             path="/payments"
 //             element={
@@ -104,6 +119,7 @@
 //             }
 //           />
 
+//           {/* Employees */}
 //           <Route
 //             path="/employees"
 //             element={
@@ -115,6 +131,7 @@
 //             }
 //           />
 
+//           {/* Support Tickets */}
 //           <Route
 //             path="/tickets"
 //             element={
@@ -126,6 +143,7 @@
 //             }
 //           />
 
+//           {/* Upgrade Requests */}
 //           <Route
 //             path="/upgrade-requests"
 //             element={
@@ -137,6 +155,7 @@
 //             }
 //           />
 
+//           {/* Audit Logs */}
 //           <Route
 //             path="/audit-logs"
 //             element={
@@ -148,21 +167,42 @@
 //             }
 //           />
 
-//           <Route path="/profile" element={<ProfilePage />} />
+//           {/* Backups */}
+//           <Route
+//             path="/backups"
+//             element={
+//               <ProtectedRoute
+//                 allowedRoles={["SUPER_ADMIN"]}
+//               >
+//                 <BackupsPage />
+//               </ProtectedRoute>
+//             }
+//           />
+
+//           {/* Profile */}
+//           <Route
+//             path="/profile"
+//             element={<ProfilePage />}
+//           />
 
 //         </Route>
 
-//         {/* Default Route */}
+//         {/* ==========================================
+//             DEFAULT ROUTE
+//         ========================================== */}
+
 //         <Route
 //           path="*"
 //           element={<Navigate to="/dashboard" replace />}
 //         />
 
 //       </Routes>
-
 //     </BrowserRouter>
 //   );
 // }
+
+
+
 
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -171,6 +211,7 @@ import TestimonialsPage from "./pages/Testimonials";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CompaniesPage from "./pages/CompaniesPage";
+import CompanyUsagePage from "./pages/CompanyUsagePage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import SubscriptionPlansPage from "./pages/SubscriptionPlansPage";
 import EmployeesPage from "./pages/EmployeesPage";
@@ -234,6 +275,18 @@ export default function App() {
                 allowedRoles={["SUPER_ADMIN", "EMPLOYEE"]}
               >
                 <CompaniesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Company Usage */}
+          <Route
+            path="/company-usage"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN", "EMPLOYEE"]}
+              >
+                <CompanyUsagePage />
               </ProtectedRoute>
             }
           />
