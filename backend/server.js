@@ -242,9 +242,23 @@ const allowedOrigins = [
   "https://watsupcl.thevsoft.com",
 ];
 
+// app.use(
+//   cors({
+//     origin: allowedOrigins,
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
+
+
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      console.warn("CORS blocked origin:", origin);   // Render logs-la paakkalaam
+      return cb(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
