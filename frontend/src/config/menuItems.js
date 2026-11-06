@@ -110,6 +110,7 @@ import {
   MessageSquareQuote,
   DatabaseBackup,
   Activity,
+  Bot,
 } from "lucide-react";
 
 export const menuItems = [
@@ -180,6 +181,16 @@ export const menuItems = [
     name: "Audit Logs",
     icon: History,
     path: "/audit-logs",
+    roles: ["SUPER_ADMIN"],
+  },
+
+  // ===============================
+  // AI MANAGEMENT (CHATBOT)
+  // ===============================
+  {
+    name: "AI Management",
+    icon: Bot,
+    path: "/ai-management",
     roles: ["SUPER_ADMIN"],
   },
 
