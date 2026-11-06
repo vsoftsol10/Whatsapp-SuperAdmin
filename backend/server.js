@@ -305,6 +305,9 @@ const demoRequestRoutes = require("./routes/demoRequestRoutes");
 
 // Super Admin Backup
 const superAdminBackupRoutes = require("./routes/superAdminBackupRoutes");
+
+// AI Management (chatbot settings, knowledge base, usage)
+const aiManagementRoutes = require("./routes/aiManagementRoutes");
 const companyUsageRoutes = require("./routes/companyUsageRoutes");
 
 // ===============================
@@ -364,6 +367,12 @@ app.use(
   superAdminBackupRoutes
 );
 console.log("✅ SUPER ADMIN BACKUP ROUTES REGISTERED");
+
+// ===============================
+// AI MANAGEMENT (SUPER ADMIN)
+// ===============================
+
+app.use("/api/ai-management", aiManagementRoutes);
 
 // ===============================
 // COMPANY USAGE (AI, WhatsApp, Facebook, Instagram, campaigns, templates)
