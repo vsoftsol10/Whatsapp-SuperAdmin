@@ -32,8 +32,8 @@ model SuperAdmin {
 //////////////////////////////////////////////////////
 
 model Company {
-  id          Int    @id @default(autoincrement())
-  companyId   String @unique
+  id          Int     @id @default(autoincrement())
+  companyId   String  @unique
   companyName String
   logo        String?
   ownerName   String
@@ -54,35 +54,37 @@ model Company {
 
   // Facebook Pages connected for Messenger
   facebookPages FacebookPage[]
-  aiUsageLogs AiUsageLog[]
+  aiUsageLogs   AiUsageLog[]
 
   // SaaS
-  subscriptions   Subscription[]
-  supportTickets  SupportTicket[]
-  payments        Payment[]
+  subscriptions  Subscription[]
+  supportTickets SupportTicket[]
+  payments       Payment[]
 
   // CRM
-  users                        User[]
-  customers                    Customer[]
-  services                     Service[]
-  conversations                Conversation[]
-  campaigns                    Campaign[]
-  templates                    Template[]
-  leads                        Lead[]
-  deals                        Deal[]
-  tasks                        Task[]
-  tickets                      Ticket[]
-  employees                    Employee[]
-  crmAuditLogs                 CrmAuditLog[]
-  subscriptionUpgradeRequests  SubscriptionUpgradeRequest[]
+  users                       User[]
+  customers                   Customer[]
+  services                    Service[]
+  conversations               Conversation[]
+  campaigns                   Campaign[]
+  templates                   Template[]
+  leads                       Lead[]
+  deals                       Deal[]
+  proposals                   Proposal[]
+  tasks                       Task[]
+  tickets                     Ticket[]
+  employees                   Employee[]
+  crmAuditLogs                CrmAuditLog[]
+  subscriptionUpgradeRequests SubscriptionUpgradeRequest[]
 
   integrations Integration[]
-  purchases Purchase[]
+  purchases    Purchase[]
 
   backups Backup[]
 
   // AI auto-reply configuration (one row per company)
   aiSettings AiSettings?
+
   // AI support chatbot
   chatbotTenantSetting ChatbotTenantSetting?
   chatbotConversations ChatbotConversation[]
@@ -252,6 +254,12 @@ model SubscriptionPlan {
   maxCustomers Int @default(100)
   maxCampaigns Int
   maxTemplates Int @default(20)
+
+  // Integration limits (-1 = unlimited)
+  maxFacebookPages       Int @default(-1)
+  maxInstagramAccounts   Int @default(-1)
+  maxWebsiteIntegrations Int @default(-1)
+  maxAppIntegrations     Int @default(-1)
 
   features Json
 
@@ -528,6 +536,10 @@ model User {
 
   isFirstLogin Boolean @default(true)
 
+  // NEW: set when the user finishes / skips the product tour (user guide),
+  // so it is shown only once per account, not once per browser.
+  tourSeenAt DateTime?
+
   resetToken       String?
   resetTokenExpiry DateTime?
 
@@ -547,15 +559,16 @@ model User {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  campaigns  Campaign[]
-  customers  Customer[]
-  templates  Template[]
+  campaigns Campaign[]
+  customers Customer[]
+  templates Template[]
 
-  assignedLeads  Lead[] @relation("AssignedLeads")
-  leadWorkNotes  LeadWorkNote[] @relation("LeadWorkNotes")
+  assignedLeads Lead[]         @relation("AssignedLeads")
+  leadWorkNotes LeadWorkNote[] @relation("LeadWorkNotes")
 
-  assignedDeals Deal[] @relation("AssignedDeals")
-  createdDeals  Deal[] @relation("CreatedDeals")
+  assignedDeals    Deal[]     @relation("AssignedDeals")
+  createdDeals     Deal[]     @relation("CreatedDeals")
+  createdProposals Proposal[] @relation("CreatedProposals")
 
   dealActivities DealActivity[] @relation("CreatedDealActivities")
 
@@ -563,12 +576,12 @@ model User {
 
   backups Backup[]
 
-  assignedTasks Task[] @relation("AssignedTasks")
-  createdTasks  Task[] @relation("CreatedTasks")
+  assignedTasks Task[]         @relation("AssignedTasks")
+  createdTasks  Task[]         @relation("CreatedTasks")
   taskWorkNotes TaskWorkNote[] @relation("TaskWorkNotes")
 
-  assignedTickets Ticket[] @relation("AssignedTickets")
-  createdTickets  Ticket[] @relation("CreatedTickets")
+  assignedTickets Ticket[]         @relation("AssignedTickets")
+  createdTickets  Ticket[]         @relation("CreatedTickets")
   ticketWorkNotes TicketWorkNote[] @relation("TicketWorkNotes")
 
   ///////////////////////////////////////
@@ -606,12 +619,13 @@ model Customer {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 
-  conversations       Conversation?
-  campaignRecipients  CampaignRecipient[]
-  templateRecipients  TemplateRecipient[]
-  deals               Deal[]
-  tickets             Ticket[]
-  purchases Purchase[]
+  conversations      Conversation?
+  campaignRecipients CampaignRecipient[]
+  templateRecipients TemplateRecipient[]
+  deals              Deal[]
+  tickets            Ticket[]
+  purchases          Purchase[]
+  proposals          Proposal[]
 
   // Services this customer uses (optional, many-to-many)
   customerServices CustomerService[]
@@ -687,7 +701,7 @@ model Conversation {
   channel String @default("WHATSAPP")
 
   lastMessage String?
-  unreadCount Int    @default(0)
+  unreadCount Int     @default(0)
 
   welcomeSent Boolean @default(false)
 
@@ -710,11 +724,11 @@ model Conversation {
 
   ///////////////////////////////////////
 
+  @@unique([facebookPageId, externalUserId])
   @@index([companyId])
   @@index([companyId, updatedAt]) // chat list: filter by company, newest first
   @@index([whatsappAccountId])
   @@index([facebookPageId])
-  @@unique([facebookPageId, externalUserId])
 }
 
 //////////////////////////////////////////////////////
@@ -734,7 +748,7 @@ model Message {
 
   imageUrl String?
 
-  // 👈 NEW: the template's buttons (call / website / quick reply / copy code),
+  // The template's buttons (call / website / quick reply / copy code),
   // saved with a template message so the chat can show them. Null for
   // normal messages.
   buttons Json?
@@ -982,12 +996,12 @@ model Template {
   headerContent String?
   footerContent String?
 
-  // 👈 NEW: sample values for {{1}}, {{2}}, etc. in `content`.
+  // Sample values for {{1}}, {{2}}, etc. in `content`.
   // Stored as a JSON array in the same order as the variable numbers,
   // e.g. ["Rahul", "ORD1234"] for {{1}} and {{2}}.
   bodyExamples Json?
 
-  // 👈 NEW: buttons shown under the message (call / website / quick reply /
+  // Buttons shown under the message (call / website / quick reply /
   // copy code). Stored as a JSON array, e.g.
   // [{ "type": "URL", "text": "Pay Now", "url": "https://..." }]
   buttons Json?
@@ -1060,7 +1074,7 @@ model Deal {
   title       String
   description String?
 
-  value Float @default(0)
+  value Float     @default(0)
   stage DealStage @default(LEAD)
 
   customerId   String
@@ -1072,7 +1086,7 @@ model Deal {
 
   ///////////////////////////////////////
 
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer   Customer @relation(fields: [customerId], references: [id])
   createdBy  User     @relation("CreatedDeals", fields: [createdById], references: [id])
   assignedTo User?    @relation("AssignedDeals", fields: [assignedToId], references: [id])
@@ -1373,7 +1387,7 @@ enum NotificationType {
 //////////////////////////////////////////////////////
 
 model SupportTicketNote {
-  id              String @id @default(uuid())
+  id              String   @id @default(uuid())
   supportTicketId Int
   note            String
   createdById     String
@@ -1497,6 +1511,9 @@ enum CrmAuditModule {
 // API key (Gemini, Grok, OpenAI, Claude, DeepSeek, Groq, Mistral or
 // any OpenAI-compatible endpoint).
 //
+//  - companyId     : optional + unique. A row with companyId = null can
+//                    hold the OLD single global Grok row (provider GROK,
+//                    model grok-4, apiKey) from the Super Admin schema.
 //  - isEnabled     : company-wide master switch. Each Conversation's
 //                    own botEnabled still decides per chat.
 //  - provider      : the ACTIVE provider id (GEMINI, GROK, OPENAI,
@@ -1516,8 +1533,8 @@ model AiSettings {
 
   isEnabled Boolean @default(false)
 
-  provider     String @default("GEMINI")
-  model        String @default("gemini-2.5-flash")
+  provider     String  @default("GEMINI")
+  model        String  @default("gemini-2.5-flash")
   providerKeys Json?
   baseUrl      String?
 
@@ -1535,6 +1552,14 @@ model AiSettings {
 
   leadCaptureEnabled Boolean @default(false)
   leadAssigneeId     String?
+
+  // true = new leads are shared between all active employees automatically
+  // (the one who got a lead longest ago gets the next one)
+  leadAutoAssign Boolean @default(false)
+
+  // "Ask for contact details" rule for the AI (off by default):
+  // { enabled, name, phone, email, other, wording }
+  contactRequest Json?
 
   // Last failure of the auto-reply pipeline, shown on the settings page
   lastError   String?
@@ -1563,6 +1588,7 @@ enum TestimonialStatus {
   PUBLISHED
   HIDDEN
 }
+
 //////////////////////////////////////////////////////
 // CRM BACKUP
 //////////////////////////////////////////////////////
@@ -1576,7 +1602,7 @@ model Backup {
   // User who manually created the backup
   createdById String?
 
-  backupType BackupType @default(MANUAL)
+  backupType BackupType   @default(MANUAL)
   status     BackupStatus @default(PENDING)
 
   fileName    String?
@@ -1619,6 +1645,7 @@ enum BackupStatus {
   COMPLETED
   FAILED
 }
+
 //////////////////////////////////////////////////////
 // SUPER ADMIN BACKUP
 //////////////////////////////////////////////////////
@@ -1628,7 +1655,7 @@ model SuperAdminBackup {
 
   backupId String @unique
 
-  backupType SuperAdminBackupType @default(MANUAL)
+  backupType SuperAdminBackupType   @default(MANUAL)
   status     SuperAdminBackupStatus @default(PENDING)
 
   fileName    String?
@@ -1638,16 +1665,16 @@ model SuperAdminBackup {
 
   companiesCount             Int @default(0)
   subscriptionsCount         Int @default(0)
-  subscriptionPlansCount    Int @default(0)
+  subscriptionPlansCount     Int @default(0)
   subscriptionRemindersCount Int @default(0)
-  upgradeRequestsCount      Int @default(0)
+  upgradeRequestsCount       Int @default(0)
   employeesCount             Int @default(0)
-  notificationsCount        Int @default(0)
-  supportTicketsCount       Int @default(0)
-  supportTicketNotesCount   Int @default(0)
-  paymentsCount             Int @default(0)
-  testimonialsCount         Int @default(0)
-  auditLogsCount            Int @default(0)
+  notificationsCount         Int @default(0)
+  supportTicketsCount        Int @default(0)
+  supportTicketNotesCount    Int @default(0)
+  paymentsCount              Int @default(0)
+  testimonialsCount          Int @default(0)
+  auditLogsCount             Int @default(0)
 
   startedAt   DateTime?
   completedAt DateTime?
@@ -1675,6 +1702,10 @@ enum SuperAdminBackupStatus {
   FAILED
 }
 
+//////////////////////////////////////////////////////
+// INTEGRATIONS
+//////////////////////////////////////////////////////
+
 enum IntegrationType {
   BILLING
   ECOMMERCE
@@ -1690,13 +1721,13 @@ enum IntegrationStatus {
 }
 
 model Integration {
-  id Int @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   companyId Int
-  name String
-  provider String?
-  type IntegrationType
+  name      String
+  provider  String?
+  type      IntegrationType
 
-  webhookKey String? @unique
+  webhookKey    String? @unique
   webhookSecret String?
 
   // ------------------------------------------
@@ -1718,13 +1749,13 @@ model Integration {
   status IntegrationStatus @default(ACTIVE)
 
   lastEventAt DateTime?
-  lastSyncAt DateTime?
+  lastSyncAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  events IntegrationEvent[]
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  events    IntegrationEvent[]
   purchases Purchase[]
 
   @@index([companyId])
@@ -1736,16 +1767,16 @@ model IntegrationEvent {
 
   integrationId Int
 
-  eventId String
+  eventId   String
   eventType String
 
   payload Json
 
-  status String @default("RECEIVED")
+  status       String  @default("RECEIVED")
   errorMessage String?
 
   processedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
@@ -1759,15 +1790,15 @@ model IntegrationEvent {
 model Purchase {
   id Int @id @default(autoincrement())
 
-  companyId Int
+  companyId  Int
   customerId String
 
   integrationId Int?
 
   externalOrderId String?
-  invoiceNumber String?
+  invoiceNumber   String?
 
-  amount Float
+  amount   Float
   currency String @default("INR")
 
   status String
@@ -1779,11 +1810,9 @@ model Purchase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company @relation(  fields: [companyId], references: [id], onDelete: Cascade )
-
-  customer Customer @relation( fields: [customerId], references: [id], onDelete: Cascade )
-
-  integration Integration? @relation( fields: [integrationId], references: [id],  onDelete: SetNull)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  integration Integration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([customerId])
@@ -1841,6 +1870,11 @@ model FacebookPage {
   @@index([companyId])
   @@index([status])
 }
+
+//////////////////////////////////////////////////////
+// AI USAGE LOG
+//////////////////////////////////////////////////////
+
 model AiUsageLog {
   id Int @id @default(autoincrement())
 
@@ -1977,9 +2011,9 @@ model ChatbotMessage {
   content  String
   question String? // assistant rows: the question that was answered
 
-  promptTokens     Int    @default(0)
-  completionTokens Int    @default(0)
-  cost             Float  @default(0)
+  promptTokens     Int     @default(0)
+  completionTokens Int     @default(0)
+  cost             Float   @default(0)
   model            String?
 
   sources  Json?
@@ -1994,4 +2028,63 @@ model ChatbotMessage {
   @@index([companyId, createdAt])
   @@index([userId, createdAt])
   @@index([answered, createdAt])
+}
+
+//////////////////////////////////////////////////////
+// PROPOSAL (Proposal Builder)
+//////////////////////////////////////////////////////
+
+model Proposal {
+  id String @id @default(uuid())
+
+  companyId   Int
+  createdById String
+
+  // Optional link to an existing customer (the proposal can also be for
+  // someone who is not a customer yet).
+  customerId String?
+
+  // Who the proposal is for (typed in, or filled from a customer)
+  clientName    String  @default("")
+  clientPhone   String?
+  clientEmail   String?
+  clientCompany String?
+
+  // PROP-2026-0001 (numbering is per company, restarts every year)
+  proposalNumber String
+  title          String
+
+  // DRAFT | SENT
+  status String @default("DRAFT")
+
+  currency   String    @default("INR")
+  issueDate  DateTime  @default(now())
+  validUntil DateTime?
+
+  introMessage   String?
+  scope          String?
+  paymentDetails String?
+  terms          String?
+
+  // [{ name, description, quantity, unitPrice, discountPercent, taxPercent, lineTotal }]
+  items Json
+
+  subtotal      Float @default(0)
+  discountTotal Float @default(0)
+  taxTotal      Float @default(0)
+  total         Float @default(0)
+
+  sentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy User      @relation("CreatedProposals", fields: [createdById], references: [id])
+
+  @@unique([companyId, proposalNumber])
+  @@index([companyId])
+  @@index([customerId])
+  @@index([createdById])
 }
