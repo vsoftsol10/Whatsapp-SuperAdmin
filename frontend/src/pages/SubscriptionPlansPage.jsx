@@ -1,5 +1,4 @@
 
-
 // import { useEffect, useState } from "react";
 // import { ArrowLeft, Plus } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
@@ -12,6 +11,7 @@
 //   getSubscriptionPlans,
 //   createSubscriptionPlan,
 //   updateSubscriptionPlan,
+//   deleteSubscriptionPlan,
 // } from "../services/subscriptionPlanService";
 
 // export default function SubscriptionPlansPage() {
@@ -71,6 +71,29 @@
 //   const handleEdit = (plan) => {
 //     setEditPlan(plan);
 //     setOpenModal(true);
+//   };
+
+//   const handleDeletePlan = async (plan) => {
+//     const confirmed = window.confirm(
+//       `Are you sure you want to delete the "${plan.planName}" plan? This cannot be undone.`
+//     );
+
+//     if (!confirmed) return;
+
+//     try {
+//       await deleteSubscriptionPlan(plan.id);
+
+//       toast.success("Subscription plan deleted successfully!");
+
+//       loadPlans();
+//     } catch (error) {
+//       console.log(error);
+
+//       toast.error(
+//         error.response?.data?.message ||
+//         "Failed to delete subscription plan"
+//       );
+//     }
 //   };
 
 //   const handleCreatePlan = async (planData) => {
@@ -139,7 +162,7 @@
 //         <SubscriptionPlanList
 //           plans={plans}
 //           onEdit={handleEdit}
-//           onDelete={() => { }}
+//           onDelete={handleDeletePlan}
 //           role={role}
 //         />
 //       )}
@@ -332,6 +355,7 @@ export default function SubscriptionPlansPage() {
       <AddSubscriptionPlanModal
         open={openModal}
         editPlan={editPlan}
+        plans={plans}
         onClose={() => {
           setOpenModal(false);
           setEditPlan(null);

@@ -1,11 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pg_trgm]
 }
 
 //////////////////////////////////////////////////////
@@ -32,8 +34,8 @@ model SuperAdmin {
 //////////////////////////////////////////////////////
 
 model Company {
-  id          Int     @id @default(autoincrement())
-  companyId   String  @unique
+  id          Int    @id @default(autoincrement())
+  companyId   String @unique
   companyName String
   logo        String?
   ownerName   String
@@ -57,25 +59,26 @@ model Company {
   aiUsageLogs   AiUsageLog[]
 
   // SaaS
-  subscriptions  Subscription[]
-  supportTickets SupportTicket[]
-  payments       Payment[]
+  subscriptions   Subscription[]
+  supportTickets  SupportTicket[]
+  payments        Payment[]
 
   // CRM
-  users                       User[]
-  customers                   Customer[]
-  services                    Service[]
-  conversations               Conversation[]
-  campaigns                   Campaign[]
-  templates                   Template[]
-  leads                       Lead[]
-  deals                       Deal[]
-  proposals                   Proposal[]
-  tasks                       Task[]
-  tickets                     Ticket[]
-  employees                   Employee[]
-  crmAuditLogs                CrmAuditLog[]
-  subscriptionUpgradeRequests SubscriptionUpgradeRequest[]
+  users                        User[]
+  customers                    Customer[]
+  services                     Service[]
+  conversations                Conversation[]
+  campaigns                    Campaign[]
+  templates                    Template[]
+  leads                        Lead[]
+  deals                        Deal[]
+  proposals                    Proposal[]
+  tasks                        Task[]
+  tickets                      Ticket[]
+  employees                    Employee[]
+  crmAuditLogs                 CrmAuditLog[]
+  backupSetting                BackupSetting?
+  subscriptionUpgradeRequests  SubscriptionUpgradeRequest[]
 
   integrations Integration[]
   purchases    Purchase[]
@@ -84,6 +87,9 @@ model Company {
 
   // AI auto-reply configuration (one row per company)
   aiSettings AiSettings?
+
+  // Company knowledge base used by the AI auto-reply (strictly per company)
+  kbEntries KbEntry[]
 
   // AI support chatbot
   chatbotTenantSetting ChatbotTenantSetting?
@@ -255,15 +261,19 @@ model SubscriptionPlan {
   maxCampaigns Int
   maxTemplates Int @default(20)
 
-  // Integration limits (-1 = unlimited)
+  // Integration limits (-1 = unlimited). Managed from Super Admin.
   maxFacebookPages       Int @default(-1)
   maxInstagramAccounts   Int @default(-1)
   maxWebsiteIntegrations Int @default(-1)
   maxAppIntegrations     Int @default(-1)
 
   features Json
-
+  featureConfig Json?
   isTrial Boolean @default(false)
+
+  // NEW: true = custom plan (no fixed price / duration / limits, features only).
+  // Existing plans automatically get false.
+  isCustom Boolean @default(false)
 
   status String @default("ACTIVE")
 
@@ -559,15 +569,15 @@ model User {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  campaigns Campaign[]
-  customers Customer[]
-  templates Template[]
+  campaigns  Campaign[]
+  customers  Customer[]
+  templates  Template[]
 
-  assignedLeads Lead[]         @relation("AssignedLeads")
-  leadWorkNotes LeadWorkNote[] @relation("LeadWorkNotes")
+  assignedLeads  Lead[]         @relation("AssignedLeads")
+  leadWorkNotes  LeadWorkNote[] @relation("LeadWorkNotes")
 
-  assignedDeals    Deal[]     @relation("AssignedDeals")
-  createdDeals     Deal[]     @relation("CreatedDeals")
+  assignedDeals Deal[] @relation("AssignedDeals")
+  createdDeals  Deal[] @relation("CreatedDeals")
   createdProposals Proposal[] @relation("CreatedProposals")
 
   dealActivities DealActivity[] @relation("CreatedDealActivities")
@@ -619,13 +629,13 @@ model Customer {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 
-  conversations      Conversation?
-  campaignRecipients CampaignRecipient[]
-  templateRecipients TemplateRecipient[]
-  deals              Deal[]
-  tickets            Ticket[]
-  purchases          Purchase[]
-  proposals          Proposal[]
+  conversations       Conversation?
+  campaignRecipients  CampaignRecipient[]
+  templateRecipients  TemplateRecipient[]
+  deals               Deal[]
+  tickets             Ticket[]
+  purchases           Purchase[]
+  proposals           Proposal[]
 
   // Services this customer uses (optional, many-to-many)
   customerServices CustomerService[]
@@ -701,7 +711,7 @@ model Conversation {
   channel String @default("WHATSAPP")
 
   lastMessage String?
-  unreadCount Int     @default(0)
+  unreadCount Int    @default(0)
 
   welcomeSent Boolean @default(false)
 
@@ -724,11 +734,11 @@ model Conversation {
 
   ///////////////////////////////////////
 
-  @@unique([facebookPageId, externalUserId])
   @@index([companyId])
   @@index([companyId, updatedAt]) // chat list: filter by company, newest first
   @@index([whatsappAccountId])
   @@index([facebookPageId])
+  @@unique([facebookPageId, externalUserId])
 }
 
 //////////////////////////////////////////////////////
@@ -754,6 +764,11 @@ model Message {
   buttons Json?
 
   metaMessageId String? @unique
+
+  // Customer messages only: the Meta id of the message they tagged
+  // ("reply" in WhatsApp / Messenger / Instagram). Lets the AI know which
+  // campaign or message a short question like "how much is this?" is about.
+  replyToMetaId String?
 
   failureReason String?
   isEdited      Boolean @default(false)
@@ -831,9 +846,24 @@ model Lead {
 
   workNotes LeadWorkNote[]
 
+  // ---- existing indexes ----
   @@index([companyId])
   @@index([assignedToId])
   @@index([companyId, conversationId])
+
+  // ---- NEW: list + pagination (admin) ----
+  @@index([companyId, isConverted, createdAt])
+
+  // ---- NEW: list + pagination (employee: only their assigned leads) ----
+  @@index([companyId, assignedToId, isConverted, createdAt])
+
+  // ---- NEW: stat cards (count by status) ----
+  @@index([companyId, status])
+
+  // ---- NEW: fast search (contains / ILIKE '%text%') ----
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 //////////////////////////////////////////////////////
@@ -879,6 +909,13 @@ model Campaign {
 
   // Optional custom message for future use
   messageContent String?
+
+  // Values for the template variables {{1}}, {{2}}, {{3}}...
+  // Stored as a JSON array, e.g.
+  // [{ "index": 1, "source": "name" }, { "index": 2, "source": "custom", "value": "50% off" }]
+  // source = "name" | "company" | "custom"
+  // Empty/null = old behaviour ({{1}} = customer name, {{2}} = messageContent)
+  variableValues Json?
 
   status CampaignStatus @default(DRAFT)
 
@@ -1533,8 +1570,8 @@ model AiSettings {
 
   isEnabled Boolean @default(false)
 
-  provider     String  @default("GEMINI")
-  model        String  @default("gemini-2.5-flash")
+  provider     String @default("GEMINI")
+  model        String @default("gemini-2.5-flash")
   providerKeys Json?
   baseUrl      String?
 
@@ -1560,6 +1597,10 @@ model AiSettings {
   // "Ask for contact details" rule for the AI (off by default):
   // { enabled, name, phone, email, other, wording }
   contactRequest Json?
+
+  // true = the auto-reply answers from this company's own knowledge base
+  // entries (KbEntry). Has no effect until the company adds entries.
+  useKnowledgeBase Boolean @default(true)
 
   // Last failure of the auto-reply pipeline, shown on the settings page
   lastError   String?
@@ -1637,6 +1678,7 @@ model Backup {
 
 enum BackupType {
   MANUAL
+  AUTOMATIC
 }
 
 enum BackupStatus {
@@ -1644,6 +1686,45 @@ enum BackupStatus {
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+//////////////////////////////////////////////////////
+// AUTOMATIC BACKUP SETTINGS (one row per company)
+//////////////////////////////////////////////////////
+
+model BackupSetting {
+  id String @id @default(uuid())
+
+  companyId Int @unique
+
+  // Automatic backup is ON by default for every company
+  enabled   Boolean         @default(true)
+  frequency BackupFrequency @default(WEEKLY)
+
+  // Used when frequency = WEEKLY (0 = Sunday ... 6 = Saturday)
+  dayOfWeek Int @default(1)
+
+  // Used when frequency = MONTHLY (1 - 28)
+  dayOfMonth Int @default(1)
+
+  // How many automatic backups to keep (older ones are deleted)
+  retentionCount Int @default(7)
+
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextRunAt])
+}
+
+enum BackupFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 //////////////////////////////////////////////////////
@@ -1721,7 +1802,7 @@ enum IntegrationStatus {
 }
 
 model Integration {
-  id        Int             @id @default(autoincrement())
+  id        Int    @id @default(autoincrement())
   companyId Int
   name      String
   provider  String?
@@ -1772,7 +1853,7 @@ model IntegrationEvent {
 
   payload Json
 
-  status       String  @default("RECEIVED")
+  status       String @default("RECEIVED")
   errorMessage String?
 
   processedAt DateTime?
@@ -2087,4 +2168,39 @@ model Proposal {
   @@index([companyId])
   @@index([customerId])
   @@index([createdById])
+}
+
+//////////////////////////////////////////////////////
+// COMPANY KNOWLEDGE BASE (used by the AI auto-reply)
+//////////////////////////////////////////////////////
+// Every row belongs to exactly ONE company. NOTE: separate from
+// KnowledgeDoc / KnowledgeChunk above, which are the GLOBAL docs of the
+// CRM help chatbot (managed by Super Admin, no companyId on purpose).
+// Every read and write of this table MUST filter by companyId.
+model KbEntry {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title    String
+  category String  @default("General")
+  // Optional synonyms / other ways customers ask, e.g. "shipping, delivery charge"
+  keywords String?
+  content  String
+
+  isActive Boolean @default(true)
+
+  createdById String?
+
+  // Search index column. Filled by a database trigger (installed automatically
+  // when the server starts, see services/ai/knowledgeBaseSetup.js); the app
+  // never writes it directly. Makes the AI search fast for large catalogs.
+  searchVector Unsupported("tsvector")?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, isActive])
+  @@index([searchVector], type: Gin)
 }

@@ -1,4 +1,3 @@
-
 // import { useState, useEffect } from "react";
 // import { X, Plus, Trash2 } from "lucide-react";
 
@@ -16,8 +15,13 @@
 //     maxCustomers: "",
 //     maxCampaigns: "",
 //     maxTemplates: "",
+//     maxFacebookPages: "",
+//     maxInstagramAccounts: "",
+//     maxWebsiteIntegrations: "",
+//     maxAppIntegrations: "",
 //     features: [],
 //     isTrial: false,
+//     isCustom: false,
 //     status: "ACTIVE",
 //   };
 
@@ -37,8 +41,13 @@
 //         maxCustomers: editPlan.maxCustomers?.toString() || "",
 //         maxCampaigns: editPlan.maxCampaigns?.toString() || "",
 //         maxTemplates: editPlan.maxTemplates?.toString() || "",
+//         maxFacebookPages: editPlan.maxFacebookPages?.toString() ?? "",
+//         maxInstagramAccounts: editPlan.maxInstagramAccounts?.toString() ?? "",
+//         maxWebsiteIntegrations: editPlan.maxWebsiteIntegrations?.toString() ?? "",
+//         maxAppIntegrations: editPlan.maxAppIntegrations?.toString() ?? "",
 //         features: editPlan.features || [],
 //         isTrial: editPlan.isTrial || false,
+//         isCustom: editPlan.isCustom || false,
 //         status: editPlan.status || "ACTIVE",
 //       });
 //     } else {
@@ -46,6 +55,7 @@
 //     }
 
 //     setFeatureInput("");
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
 //   }, [open, editPlan]);
 
 //   const handleChange = (e) => {
@@ -54,17 +64,6 @@
 //     setForm((prev) => ({
 //       ...prev,
 //       [name]: type === "checkbox" ? checked : value,
-//     }));
-//   };
-
-//   const handleTrialChange = (e) => {
-//     const checked = e.target.checked;
-
-//     setForm((prev) => ({
-//       ...prev,
-//       isTrial: checked,
-//       price: checked ? "0" : prev.price,
-//       durationDays: checked ? "14" : prev.durationDays,
 //     }));
 //   };
 
@@ -108,18 +107,41 @@
 //       return;
 //     }
 
-//     const payload = {
-//       planName: form.planName.trim(),
-//       price: Number(form.price || 0),
-//       durationDays: Number(form.durationDays),
-//       maxUsers: Number(form.maxUsers),
-//       maxCustomers: Number(form.maxCustomers),
-//       maxCampaigns: Number(form.maxCampaigns),
-//       maxTemplates: Number(form.maxTemplates),
-//       features: form.features,
-//       isTrial: form.isTrial,
-//       status: form.status,
-//     };
+//     let payload;
+
+//     if (form.isCustom) {
+//       if (form.features.length === 0) {
+//         alert("Please add at least one feature for the custom plan");
+//         return;
+//       }
+
+//       // Custom plan: only name, status and features.
+//       // Backend fills price / duration / limits automatically.
+//       payload = {
+//         planName: form.planName.trim(),
+//         isCustom: true,
+//         features: form.features,
+//         status: form.status,
+//       };
+//     } else {
+//       payload = {
+//         planName: form.planName.trim(),
+//         price: Number(form.price || 0),
+//         durationDays: Number(form.durationDays),
+//         maxUsers: Number(form.maxUsers),
+//         maxCustomers: Number(form.maxCustomers),
+//         maxCampaigns: Number(form.maxCampaigns),
+//         maxTemplates: Number(form.maxTemplates),
+//         maxFacebookPages: Number(form.maxFacebookPages || 0),
+//         maxInstagramAccounts: Number(form.maxInstagramAccounts || 0),
+//         maxWebsiteIntegrations: Number(form.maxWebsiteIntegrations || 0),
+//         maxAppIntegrations: Number(form.maxAppIntegrations || 0),
+//         features: form.features,
+//         isTrial: form.isTrial,
+//         isCustom: false,
+//         status: form.status,
+//       };
+//     }
 
 //     try {
 //       setLoading(true);
@@ -162,7 +184,9 @@
 //             </h2>
 
 //             <p className="mt-1 text-sm text-gray-500">
-//               Configure pricing, limits and plan features.
+//               {form.isCustom
+//                 ? "Custom plan: add features only. No price or limits."
+//                 : "Configure pricing, limits and plan features."}
 //             </p>
 //           </div>
 
@@ -180,6 +204,27 @@
 //           onSubmit={handleSubmit}
 //           className="flex-1 overflow-y-auto p-6"
 //         >
+//           {/* Custom plan toggle */}
+//           <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+//             <input
+//               type="checkbox"
+//               name="isCustom"
+//               checked={form.isCustom}
+//               onChange={handleChange}
+//               className="mt-1 h-4 w-4 accent-[#25D366]"
+//             />
+
+//             <span>
+//               <span className="block text-sm font-semibold text-gray-900">
+//                 Custom plan
+//               </span>
+//               <span className="block text-sm text-gray-500">
+//                 No fixed price, duration or limits. Only features are listed,
+//                 and customers contact sales for pricing.
+//               </span>
+//             </span>
+//           </label>
+
 //           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
 //             <div>
@@ -192,7 +237,7 @@
 //                 name="planName"
 //                 value={form.planName}
 //                 onChange={handleChange}
-//                 placeholder="Professional"
+//                 placeholder={form.isCustom ? "Enterprise" : "Professional"}
 //                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
 //                 required
 //               />
@@ -214,86 +259,121 @@
 //               </select>
 //             </div>
 
-//             <div>
-//               <label className="mb-2 block text-sm font-medium text-gray-700">
-//                 Price (₹)
-//               </label>
+//             {!form.isCustom && (
+//               <>
+//                 <div>
+//                   <label className="mb-2 block text-sm font-medium text-gray-700">
+//                     Price (₹)
+//                   </label>
 
-//               <input
-//                 type="number"
-//                 min="0"
-//                 name="price"
-//                 value={form.price}
-//                 onChange={handleChange}
-//                 disabled={form.isTrial}
-//                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none disabled:bg-gray-100"
-//               />
-//             </div>
+//                   <input
+//                     type="number"
+//                     min="0"
+//                     name="price"
+//                     value={form.price}
+//                     onChange={handleChange}
+//                     disabled={form.isTrial}
+//                     className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none disabled:bg-gray-100"
+//                   />
+//                 </div>
 
-//             <div>
-//               <label className="mb-2 block text-sm font-medium text-gray-700">
-//                 Duration (Days)
-//               </label>
+//                 <div>
+//                   <label className="mb-2 block text-sm font-medium text-gray-700">
+//                     Duration (Days)
+//                   </label>
 
-//               <input
-//                 type="number"
-//                 min="1"
-//                 name="durationDays"
-//                 value={form.durationDays}
-//                 onChange={handleChange}
-//                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
-//               />
-//             </div>
-
-//           </div>
-
-
-
-//           {/* Limits */}
-
-//           <div className="mt-6">
-
-//             <h3 className="text-lg font-semibold">
-//               Usage Limits
-//             </h3>
-
-//             <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-
-//               <LimitInput
-//                 label="Maximum Users"
-//                 name="maxUsers"
-//                 value={form.maxUsers}
-//                 onChange={handleChange}
-//                 placeholder="20"
-//               />
-
-//               <LimitInput
-//                 label="Maximum Customers"
-//                 name="maxCustomers"
-//                 value={form.maxCustomers}
-//                 onChange={handleChange}
-//                 placeholder="10000"
-//               />
-
-//               <LimitInput
-//                 label="Maximum Campaigns"
-//                 name="maxCampaigns"
-//                 value={form.maxCampaigns}
-//                 onChange={handleChange}
-//                 placeholder="-1"
-//               />
-
-//               <LimitInput
-//                 label="Maximum Templates"
-//                 name="maxTemplates"
-//                 value={form.maxTemplates}
-//                 onChange={handleChange}
-//                 placeholder="20"
-//               />
-
-//             </div>
+//                   <input
+//                     type="number"
+//                     min="1"
+//                     name="durationDays"
+//                     value={form.durationDays}
+//                     onChange={handleChange}
+//                     className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
+//                   />
+//                 </div>
+//               </>
+//             )}
 
 //           </div>
+
+//           {/* Limits (hidden for custom plans) */}
+//           {!form.isCustom && (
+//             <div className="mt-6">
+
+//               <h3 className="text-lg font-semibold">
+//                 Usage Limits
+//               </h3>
+
+//               <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+
+//                 <LimitInput
+//                   label="Maximum Users"
+//                   name="maxUsers"
+//                   value={form.maxUsers}
+//                   onChange={handleChange}
+//                   placeholder="20"
+//                 />
+
+//                 <LimitInput
+//                   label="Maximum Customers"
+//                   name="maxCustomers"
+//                   value={form.maxCustomers}
+//                   onChange={handleChange}
+//                   placeholder="10000"
+//                 />
+
+//                 <LimitInput
+//                   label="Maximum Campaigns"
+//                   name="maxCampaigns"
+//                   value={form.maxCampaigns}
+//                   onChange={handleChange}
+//                   placeholder="-1"
+//                 />
+
+//                 <LimitInput
+//                   label="Maximum Templates"
+//                   name="maxTemplates"
+//                   value={form.maxTemplates}
+//                   onChange={handleChange}
+//                   placeholder="20"
+//                 />
+
+//                 <LimitInput
+//                   label="Facebook Pages"
+//                   name="maxFacebookPages"
+//                   value={form.maxFacebookPages}
+//                   onChange={handleChange}
+//                   placeholder="1"
+//                 />
+
+//                 <LimitInput
+//                   label="Instagram Accounts"
+//                   name="maxInstagramAccounts"
+//                   value={form.maxInstagramAccounts}
+//                   onChange={handleChange}
+//                   placeholder="1"
+//                 />
+
+//                 <LimitInput
+//                   label="Website Integrations"
+//                   name="maxWebsiteIntegrations"
+//                   value={form.maxWebsiteIntegrations}
+//                   onChange={handleChange}
+//                   placeholder="1"
+//                 />
+
+//                 <LimitInput
+//                   label="App Integrations"
+//                   name="maxAppIntegrations"
+//                   value={form.maxAppIntegrations}
+//                   onChange={handleChange}
+//                   placeholder="0"
+//                 />
+
+//               </div>
+
+//             </div>
+//           )}
 
 //           {/* Features */}
 
@@ -387,6 +467,7 @@
 //     </div>
 //   );
 // }
+
 // function LimitInput({
 //   label,
 //   name,
@@ -414,36 +495,38 @@
 
 
 
-
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
+import FeatureLimitsEditor, {
+  buildFormConfig,
+  validateFormConfig,
+  toPayloadConfig,
+} from "./FeatureLimitsEditor";
+import { getFeatureCatalog } from "../../services/subscriptionPlanService";
 
 export default function AddSubscriptionPlanModal({
   open,
   onClose,
   onSubmit,
   editPlan = null,
+  plans = [],
 }) {
   const initialForm = {
     planName: "",
     price: "",
     durationDays: "30",
-    maxUsers: "",
-    maxCustomers: "",
-    maxCampaigns: "",
-    maxTemplates: "",
-    maxFacebookPages: "",
-    maxInstagramAccounts: "",
-    maxWebsiteIntegrations: "",
-    maxAppIntegrations: "",
     features: [],
     isTrial: false,
+    isCustom: false,
     status: "ACTIVE",
   };
 
   const [form, setForm] = useState(initialForm);
   const [featureInput, setFeatureInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [catalog, setCatalog] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [featureForm, setFeatureForm] = useState({});
 
   useEffect(() => {
     if (!open) return;
@@ -453,16 +536,9 @@ export default function AddSubscriptionPlanModal({
         planName: editPlan.planName || "",
         price: editPlan.price?.toString() || "",
         durationDays: editPlan.durationDays?.toString() || "30",
-        maxUsers: editPlan.maxUsers?.toString() || "",
-        maxCustomers: editPlan.maxCustomers?.toString() || "",
-        maxCampaigns: editPlan.maxCampaigns?.toString() || "",
-        maxTemplates: editPlan.maxTemplates?.toString() || "",
-        maxFacebookPages: editPlan.maxFacebookPages?.toString() ?? "",
-        maxInstagramAccounts: editPlan.maxInstagramAccounts?.toString() ?? "",
-        maxWebsiteIntegrations: editPlan.maxWebsiteIntegrations?.toString() ?? "",
-        maxAppIntegrations: editPlan.maxAppIntegrations?.toString() ?? "",
         features: editPlan.features || [],
         isTrial: editPlan.isTrial || false,
+        isCustom: editPlan.isCustom || false,
         status: editPlan.status || "ACTIVE",
       });
     } else {
@@ -470,7 +546,53 @@ export default function AddSubscriptionPlanModal({
     }
 
     setFeatureInput("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editPlan]);
+
+  // Load the feature list (from the backend catalog) every time the modal opens
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      try {
+        setCatalogLoading(true);
+
+        const data = await getFeatureCatalog();
+        if (cancelled) return;
+
+        const list = data.features || [];
+        setCatalog(list);
+        setFeatureForm(buildFormConfig(list, editPlan?.featureConfig));
+      } catch (error) {
+        console.log(error);
+        if (!cancelled) setCatalog([]);
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    };
+
+    loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, editPlan]);
+
+  const handleFeatureChange = (key, patch) => {
+    setFeatureForm((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], ...patch },
+    }));
+  };
+
+  const handleCopyFrom = (planId) => {
+    const source = plans.find((p) => p.id === planId);
+    if (!source) return;
+
+    setFeatureForm(buildFormConfig(catalog, source.featureConfig));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -478,17 +600,6 @@ export default function AddSubscriptionPlanModal({
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleTrialChange = (e) => {
-    const checked = e.target.checked;
-
-    setForm((prev) => ({
-      ...prev,
-      isTrial: checked,
-      price: checked ? "0" : prev.price,
-      durationDays: checked ? "14" : prev.durationDays,
     }));
   };
 
@@ -532,22 +643,46 @@ export default function AddSubscriptionPlanModal({
       return;
     }
 
-    const payload = {
-      planName: form.planName.trim(),
-      price: Number(form.price || 0),
-      durationDays: Number(form.durationDays),
-      maxUsers: Number(form.maxUsers),
-      maxCustomers: Number(form.maxCustomers),
-      maxCampaigns: Number(form.maxCampaigns),
-      maxTemplates: Number(form.maxTemplates),
-      maxFacebookPages: Number(form.maxFacebookPages || 0),
-      maxInstagramAccounts: Number(form.maxInstagramAccounts || 0),
-      maxWebsiteIntegrations: Number(form.maxWebsiteIntegrations || 0),
-      maxAppIntegrations: Number(form.maxAppIntegrations || 0),
-      features: form.features,
-      isTrial: form.isTrial,
-      status: form.status,
-    };
+    let payload;
+
+    if (form.isCustom) {
+      if (form.features.length === 0) {
+        alert("Please add at least one feature for the custom plan");
+        return;
+      }
+
+      // Custom plan: only name, status and features.
+      // Backend fills price / duration / limits automatically.
+      payload = {
+        planName: form.planName.trim(),
+        isCustom: true,
+        features: form.features,
+        status: form.status,
+      };
+    } else {
+      if (catalog.length === 0) {
+        alert("Feature list is not loaded. Please close and open this window again.");
+        return;
+      }
+
+      const featureError = validateFormConfig(catalog, featureForm);
+      if (featureError) {
+        alert(featureError);
+        return;
+      }
+
+      // The backend fills the old limit columns from featureConfig
+      payload = {
+        planName: form.planName.trim(),
+        price: Number(form.price || 0),
+        durationDays: Number(form.durationDays),
+        featureConfig: toPayloadConfig(catalog, featureForm),
+        features: form.features,
+        isTrial: form.isTrial,
+        isCustom: false,
+        status: form.status,
+      };
+    }
 
     try {
       setLoading(true);
@@ -590,7 +725,9 @@ export default function AddSubscriptionPlanModal({
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Configure pricing, limits and plan features.
+              {form.isCustom
+                ? "Custom plan: add features only. No price or limits."
+                : "Configure pricing, limits and plan features."}
             </p>
           </div>
 
@@ -608,6 +745,27 @@ export default function AddSubscriptionPlanModal({
           onSubmit={handleSubmit}
           className="flex-1 overflow-y-auto p-6"
         >
+          {/* Custom plan toggle */}
+          <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <input
+              type="checkbox"
+              name="isCustom"
+              checked={form.isCustom}
+              onChange={handleChange}
+              className="mt-1 h-4 w-4 accent-[#25D366]"
+            />
+
+            <span>
+              <span className="block text-sm font-semibold text-gray-900">
+                Custom plan
+              </span>
+              <span className="block text-sm text-gray-500">
+                No fixed price, duration or limits. Only features are listed,
+                and customers contact sales for pricing.
+              </span>
+            </span>
+          </label>
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
             <div>
@@ -620,7 +778,7 @@ export default function AddSubscriptionPlanModal({
                 name="planName"
                 value={form.planName}
                 onChange={handleChange}
-                placeholder="Professional"
+                placeholder={form.isCustom ? "Enterprise" : "Professional"}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
                 required
               />
@@ -642,126 +800,81 @@ export default function AddSubscriptionPlanModal({
               </select>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Price (₹)
-              </label>
+            {!form.isCustom && (
+              <>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Price (₹)
+                  </label>
 
-              <input
-                type="number"
-                min="0"
-                name="price"
-                value={form.price}
-                onChange={handleChange}
-                disabled={form.isTrial}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none disabled:bg-gray-100"
-              />
-            </div>
+                  <input
+                    type="number"
+                    min="0"
+                    name="price"
+                    value={form.price}
+                    onChange={handleChange}
+                    disabled={form.isTrial}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none disabled:bg-gray-100"
+                  />
+                </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Duration (Days)
-              </label>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Duration (Days)
+                  </label>
 
-              <input
-                type="number"
-                min="1"
-                name="durationDays"
-                value={form.durationDays}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
-              />
-            </div>
-
-          </div>
-
-
-
-          {/* Limits */}
-
-          <div className="mt-6">
-
-            <h3 className="text-lg font-semibold">
-              Usage Limits
-            </h3>
-
-            <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-
-              <LimitInput
-                label="Maximum Users"
-                name="maxUsers"
-                value={form.maxUsers}
-                onChange={handleChange}
-                placeholder="20"
-              />
-
-              <LimitInput
-                label="Maximum Customers"
-                name="maxCustomers"
-                value={form.maxCustomers}
-                onChange={handleChange}
-                placeholder="10000"
-              />
-
-              <LimitInput
-                label="Maximum Campaigns"
-                name="maxCampaigns"
-                value={form.maxCampaigns}
-                onChange={handleChange}
-                placeholder="-1"
-              />
-
-              <LimitInput
-                label="Maximum Templates"
-                name="maxTemplates"
-                value={form.maxTemplates}
-                onChange={handleChange}
-                placeholder="20"
-              />
-
-              <LimitInput
-                label="Facebook Pages"
-                name="maxFacebookPages"
-                value={form.maxFacebookPages}
-                onChange={handleChange}
-                placeholder="1"
-              />
-
-              <LimitInput
-                label="Instagram Accounts"
-                name="maxInstagramAccounts"
-                value={form.maxInstagramAccounts}
-                onChange={handleChange}
-                placeholder="1"
-              />
-
-              <LimitInput
-                label="Website Integrations"
-                name="maxWebsiteIntegrations"
-                value={form.maxWebsiteIntegrations}
-                onChange={handleChange}
-                placeholder="1"
-              />
-
-              <LimitInput
-                label="App Integrations"
-                name="maxAppIntegrations"
-                value={form.maxAppIntegrations}
-                onChange={handleChange}
-                placeholder="0"
-              />
-
-            </div>
+                  <input
+                    type="number"
+                    min="1"
+                    name="durationDays"
+                    value={form.durationDays}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-[#25D366] focus:ring-2 focus:ring-green-100 outline-none"
+                  />
+                </div>
+              </>
+            )}
 
           </div>
+
+          {/* Features & Limits (hidden for custom plans) */}
+          {!form.isCustom && (
+            <div className="mt-6">
+
+              <h3 className="text-lg font-semibold">
+                Features & Limits
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Switch features on or off for this plan and set a limit where
+                it applies.
+              </p>
+
+              <FeatureLimitsEditor
+                catalog={catalog}
+                value={featureForm}
+                onChange={handleFeatureChange}
+                loading={catalogLoading}
+                copyPlans={plans.filter(
+                  (p) => !p.isCustom && p.id !== editPlan?.id
+                )}
+                onCopyFrom={handleCopyFrom}
+              />
+
+            </div>
+          )}
 
           {/* Features */}
 
           <div className="mt-6">
 
             <h3 className="text-lg font-semibold">
-              Features
+              Plan Highlights
             </h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Text points shown on the plan card and the landing page.
+            </p>
 
             <div className="mt-4 flex gap-3">
 
@@ -844,30 +957,6 @@ export default function AddSubscriptionPlanModal({
         </div>
 
       </div>
-    </div>
-  );
-}
-function LimitInput({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-gray-700">
-        {label}
-      </label>
-
-      <input
-        type="number"
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-[#25D366] focus:ring-2 focus:ring-green-100"
-      />
     </div>
   );
 }
